@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  isDeleted Boolean  @default(false)
+
+  channel       Channel?
+  comments      Comment[]
+  likes         Like[]
+  subscriptions Subscription[]
+  watchLaters   WatchLater[]
+}
+
+model Channel {
+  id              String   @id @default(uuid())
+  title           String
+  description     String?
+  thumbnailUrl    String?
+  channelImageUrl String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+  isDeleted       Boolean  @default(false)
+
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id])
+  videos        Video[]
+  subscriptions Subscription[]
+}
+
+model Video {
+  id           String   @id @default(uuid())
+  title        String
+  description  String
+  videoUrl     String
+  duration     Int
+  size         Float
+  isPublished  Boolean  @default(false)
+  thumbnailUrl String
+  views        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  isDeleted    Boolean  @default(false)
+
+  channelId   String
+  channel     Channel      @relation(references: [id], fields: [channelId])
+  comments    Comment[]
+  likes       Like[]
+  watchLaters WatchLater[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  isEditted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  isDeleted Boolean  @default(false)
+
+  userId  String
+  user    User   @relation(references: [id], fields: [userId])
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id])
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  isDeleted Boolean  @default(false)
+
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id])
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@index([userId, videoId])
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  isDeleted Boolean  @default(false)
+
+  userId    String
+  user      User    @relation(references: [id], fields: [userId])
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id])
+
+  @@index([userId, channelId])
+}
+
+model WatchLater {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  isDeleted Boolean  @default(false)
+
+  userId  String
+  user    User   @relation(references: [id], fields: [userId])
+  videoId String
+  video   Video  @relation(references: [id], fields: [videoId])
+
+  @@index([userId, videoId])
+}
