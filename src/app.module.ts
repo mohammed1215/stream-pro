@@ -13,9 +13,10 @@ import { VideosModule } from './videos/videos.module';
 import { CommentsModule } from './comments/comments.module';
 import { VideoProcessingService } from './video-processing/video-processing.service';
 import { extname } from 'path';
+import { tmpdir } from 'os';
 
 export const VIDEO_STORAGE = diskStorage({
-  destination: '/tmp/uploads',
+  destination: tmpdir(),
   filename(req, file, callback) {
     const uuid = crypto.randomUUID();
     const filename = uuid + extname(file.originalname);

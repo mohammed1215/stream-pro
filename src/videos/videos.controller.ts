@@ -27,9 +27,10 @@ import { VideoCreatedResponseDto } from './dto/create-video-response.dto';
 import { diskStorage } from 'multer';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
+import { tmpdir } from 'os';
 
 const videoUploadStorage = diskStorage({
-  destination: '/tmp/uploads',
+  destination: tmpdir(),
   filename: (req, file, cb) => {
     const filename = `${randomUUID()}${extname(file.originalname)}`;
     cb(null, filename);
@@ -41,7 +42,7 @@ export class VideosController {
   constructor(private readonly videosService: VideosService) {}
 
   // ========================== Create Video ==========================
-  @ApiConsumes('multipart/form-data') // 👈 ADD THIS
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
