@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   NotFoundException,
+  Patch,
   Post,
   UploadedFile,
   UseGuards,
@@ -19,6 +20,7 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiCreatedResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
@@ -61,12 +63,16 @@ export class ChannelController {
     return new SuccessResponseShape<GetChannelResponseDto>(data);
   }
 
-  @Post('owner/channels/upload-thumbnail')
+  @Patch('owner/channels/upload-thumbnail')
   @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('thumbnail'), ChannelPreloadInterceptor)
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
-    type: 'mutlipart/form-data',
-    schema: { allOf: [{ $ref: getSchemaPath(UploadThumbnailDto) }] },
+    schema: {
+      type: 'object',
+      properties: { thumbnail: { type: 'string', format: 'binary' } },
+      required: ['thumbnail'],
+    },
   })
   @ApiBearerAuth()
   async uploadThumbnail(
@@ -82,12 +88,16 @@ export class ChannelController {
     return new SuccessResponseShape({ thumbnailUrl: data.thumbnailUrl });
   }
 
-  @Post('owner/channels/upload-channel-image')
+  @Patch('owner/channels/upload-channel-image')
   @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('avatar'), ChannelPreloadInterceptor)
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
-    type: 'mutlipart/form-data',
-    schema: { allOf: [{ $ref: getSchemaPath(UploadThumbnailDto) }] },
+    schema: {
+      type: 'object',
+      properties: { avatar: { type: 'string', format: 'binary' } },
+      required: ['avatar'],
+    },
   })
   @ApiBearerAuth()
   async uploadAvatarUrl(

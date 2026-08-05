@@ -95,6 +95,7 @@ model Like {
   userId  String
   user    User   @relation(fields: [userId], references: [id])
 
+  @@unique([userId, videoId])
   @@index([userId, videoId])
 }
 
@@ -109,6 +110,7 @@ model Subscription {
   channelId String
   channel   Channel @relation(fields: [channelId], references: [id])
 
+  @@unique([userId, channelId])
   @@index([userId, channelId])
 }
 
@@ -123,5 +125,6 @@ model WatchLater {
   videoId String
   video   Video  @relation(references: [id], fields: [videoId])
 
+  @@unique([userId, videoId])
   @@index([userId, videoId])
 }

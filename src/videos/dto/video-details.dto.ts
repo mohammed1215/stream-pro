@@ -3,6 +3,8 @@ import { VideoResponseDto } from './video-response.dto';
 
 export class VideoDetailsResponseDto extends VideoResponseDto {
   @ApiProperty() description: string;
+  @ApiProperty() commentsCount: number;
+  @ApiProperty() likesCount: number;
 
   constructor(
     id: string,
@@ -15,6 +17,8 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
     channelImageUrl: string | null,
     duration: number,
     views: number,
+    commentsCount: number,
+    likesCount: number,
   ) {
     super(
       id,
@@ -28,5 +32,7 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
       views,
     );
     this.description = description;
+    this.commentsCount = commentsCount;
+    this.likesCount = likesCount;
   }
 }

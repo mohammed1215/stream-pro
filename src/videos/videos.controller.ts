@@ -199,6 +199,8 @@ export class VideosController {
       videoData.channel.channelImageUrl,
       videoData.duration,
       videoData.views,
+      videoData._count.comments,
+      videoData._count.likes,
     );
   }
 
@@ -278,7 +280,7 @@ export class VideosController {
       updateVideoDto,
     );
 
-    new VideoDetailsResponseDto(
+    const videoDetails = new VideoDetailsResponseDto(
       videoServiceData.id,
       videoServiceData.title,
       videoServiceData.description,
@@ -289,11 +291,13 @@ export class VideosController {
       videoServiceData.channel.channelImageUrl,
       videoServiceData.duration,
       videoServiceData.views,
+      videoServiceData._count.comments,
+      videoServiceData._count.likes,
     );
 
     return {
       message: 'video details updated successfully',
-      video: videoServiceData,
+      video: videoDetails,
     };
   }
 

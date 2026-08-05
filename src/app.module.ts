@@ -15,6 +15,8 @@ import { VideoProcessingService } from './video-processing/video-processing.serv
 import { extname } from 'path';
 import { tmpdir } from 'os';
 import { LoggerInterceptor } from './logger/logger.interceptor';
+import { LikesModule } from './likes/likes.module';
+import { WatchlaterModule } from './watchlater/watchlater.module';
 
 export const VIDEO_STORAGE = diskStorage({
   destination: tmpdir(),
@@ -48,6 +50,8 @@ export const VIDEO_STORAGE = diskStorage({
     CloudinaryModule,
     VideosModule,
     CommentsModule,
+    LikesModule,
+    WatchlaterModule,
   ],
   controllers: [AppController],
   providers: [

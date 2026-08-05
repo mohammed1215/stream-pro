@@ -18,6 +18,7 @@ export const VIDEO_DETAILS_SELECT = {
       thumbnailUrl: true,
     },
   },
+  _count: true,
 } satisfies Prisma.VideoSelect;
 
 export const VIDEO_LIST_SELECT = {
