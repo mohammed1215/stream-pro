@@ -76,7 +76,12 @@ export class CommentsController {
 
     const commentList = comments.map(
       (comment) =>
-        new CommentResponseDto(comment.id, comment.content, comment.isEditted),
+        new CommentResponseDto(
+          comment.id,
+          comment.content,
+          comment.isEditted,
+          comment.userId,
+        ),
     );
 
     return new PaginatedCommentsResponseDto(commentList, page, limit);
@@ -88,6 +93,7 @@ export class CommentsController {
   // }
 
   @Patch(':commentId')
+  @UseGuards(AuthGuard)
   @ApiResponse({
     schema: {
       type: 'object',
@@ -101,9 +107,10 @@ export class CommentsController {
   })
   async update(
     @Param('commentId') commentId: string,
+    @User() user: JwtUserPayload,
     @Body() updateCommentDto: UpdateCommentDto,
   ) {
-    await this.commentsService.update(commentId, updateCommentDto);
+    await this.commentsService.update(commentId, user.userId, updateCommentDto);
     return { message: 'Comment has been updated successfully' };
   }
 
@@ -119,8 +126,12 @@ export class CommentsController {
       },
     },
   })
-  async remove(@Param('commentId') commentId: string) {
-    await this.commentsService.remove(commentId);
+  @UseGuards(AuthGuard)
+  async remove(
+    @Param('commentId') commentId: string,
+    @User() user: JwtUserPayload,
+  ) {
+    await this.commentsService.remove(commentId, user.userId);
     return { message: 'Comment has been deleted successfully' };
   }
 }

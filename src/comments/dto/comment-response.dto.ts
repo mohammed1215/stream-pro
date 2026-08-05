@@ -4,10 +4,12 @@ export class CommentResponseDto {
   @ApiProperty() commentId!: string;
   @ApiProperty() content!: string;
   @ApiProperty() isEditted!: boolean;
-  constructor(id: string, content: string, isEditted: boolean) {
+  @ApiProperty() userId!: string;
+  constructor(id: string, content: string, isEditted: boolean, userId: string) {
     this.commentId = id;
     this.content = content;
     this.isEditted = isEditted;
+    this.userId = userId;
   }
 }
 

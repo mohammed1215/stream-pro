@@ -19,6 +19,13 @@ export class CommentRepository {
         throw new ConflictException(
           'A comment with the same userId and videoId already exists.',
         );
+      } else if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new ConflictException(
+          'The specified user or video does not exist.',
+        );
       }
       throw error;
     }
@@ -29,10 +36,12 @@ export class CommentRepository {
     pageNumber: number = 1,
     pageSize: number = 10,
   ) {
+    const validPage = Math.max(1, pageNumber);
+    const validLimit = Math.max(1, pageSize);
     return this.prismaService.comment.findMany({
       where: filter,
-      skip: (pageNumber - 1) * pageSize,
-      take: pageSize,
+      skip: (validPage - 1) * validLimit,
+      take: validLimit,
     });
   }
 
@@ -42,18 +51,46 @@ export class CommentRepository {
     });
   }
 
-  async update(commentId: string, updateCommentDto: Prisma.CommentUpdateInput) {
-    const comment = await this.prismaService.comment.update({
-      where: { id: commentId },
-      data: { ...updateCommentDto, isEditted: true },
-    });
-    return comment;
+  async update(
+    commentId: string,
+    userId: string,
+    updateCommentDto: Prisma.CommentUpdateInput,
+  ) {
+    try {
+      const comment = await this.prismaService.comment.update({
+        where: { id: commentId, userId },
+        data: { ...updateCommentDto, isEditted: true },
+      });
+      return comment;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new ConflictException(
+          'Comment not found or user is not authorized to update this comment.',
+        );
+      }
+      throw error;
+    }
   }
 
-  async remove(commentId: string) {
-    const comment = await this.prismaService.comment.delete({
-      where: { id: commentId },
-    });
-    return comment;
+  async remove(commentId: string, userId: string) {
+    try {
+      const comment = await this.prismaService.comment.delete({
+        where: { id: commentId, userId },
+      });
+      return comment;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new ConflictException(
+          'Comment not found or user is not authorized to delete this comment.',
+        );
+      }
+      throw error;
+    }
   }
 }

@@ -26,11 +26,15 @@ export class CommentsService {
     return this.commentRepo.findOne(commentId);
   }
 
-  update(commentId: string, updateCommentDto: UpdateCommentDto) {
-    return this.commentRepo.update(commentId, updateCommentDto);
+  update(
+    commentId: string,
+    userId: string,
+    updateCommentDto: UpdateCommentDto,
+  ) {
+    return this.commentRepo.update(commentId, userId, updateCommentDto);
   }
 
-  remove(commentId: string) {
-    return this.commentRepo.remove(commentId);
+  remove(commentId: string, userId: string) {
+    return this.commentRepo.remove(commentId, userId);
   }
 }
