@@ -84,4 +84,47 @@ export class CloudinaryService implements OnModuleInit {
       readStream.pipe(stream);
     });
   }
+  removeImage(imageUrl: string) {
+    const publicId = imageUrl.split('/').pop()?.split('.')[0];
+    if (!publicId) {
+      throw new BadRequestException('Invalid image URL');
+    }
+
+    return v2.uploader.destroy(
+      publicId,
+      { resource_type: 'image' },
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          throw new InternalServerErrorException(
+            'error while removing the image',
+          );
+        }
+
+        return result;
+      },
+    );
+  }
+
+  removeVideo(videoUrl: string) {
+    const publicId = videoUrl.split('/').pop()?.split('.')[0];
+    if (!publicId) {
+      throw new BadRequestException('Invalid video URL');
+    }
+
+    return v2.uploader.destroy(
+      publicId,
+      { resource_type: 'video' },
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          throw new InternalServerErrorException(
+            'error while removing the video',
+          );
+        }
+
+        return result;
+      },
+    );
+  }
 }

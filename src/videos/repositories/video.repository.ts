@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateVideoDto } from '../dto/create-video.dto';
+import { UpdateVideoDto } from '../dto/update-video.dto';
+import {
+  VIDEO_DETAILS_SELECT,
+  VIDEO_LIST_OWNER_SELECT,
+  VIDEO_LIST_SELECT,
+} from './video-select';
+import { Prisma } from 'generated/prisma/client';
 
 @Injectable()
 export class VideoRepository {
@@ -44,16 +51,7 @@ export class VideoRepository {
       orderBy: { updatedAt: 'asc' },
       take: limit,
       skip: (page - 1) * limit,
-      select: {
-        _count: true,
-        id: true,
-        title: true,
-        updatedAt: true,
-        views: true,
-        duration: true,
-        videoUrl: true,
-        channel: { select: { title: true, channelImageUrl: true } },
-      },
+      select: VIDEO_LIST_SELECT,
     });
 
     return videos;
@@ -69,16 +67,7 @@ export class VideoRepository {
       orderBy: { updatedAt: 'asc' },
       take: limit,
       skip: (page - 1) * limit,
-      select: {
-        _count: true,
-        id: true,
-        title: true,
-        updatedAt: true,
-        views: true,
-        duration: true,
-        thumbnailUrl: true,
-        videoUrl: true,
-      },
+      select: VIDEO_LIST_OWNER_SELECT,
     });
 
     return videos;
@@ -87,20 +76,16 @@ export class VideoRepository {
   async findOneVideoDetails(videoId: string) {
     const video = await this.prisma.video.findUnique({
       where: { id: videoId, isDeleted: false, isPublished: true },
-      select: {
-        id: true,
-        description: true,
-        title: true,
-        views: true,
-        channel: {
-          select: {
-            channelImageUrl: true,
-            id: true,
-            description: true,
-            thumbnailUrl: true,
-          },
-        },
-      },
+      select: VIDEO_DETAILS_SELECT,
+    });
+
+    return video;
+  }
+
+  async findOneOwnerVideoDetails(videoId: string) {
+    const video = await this.prisma.video.findUnique({
+      where: { id: videoId, isDeleted: false },
+      select: VIDEO_DETAILS_SELECT,
     });
 
     return video;
@@ -110,6 +95,41 @@ export class VideoRepository {
     const video = await this.prisma.video.update({
       where: { id: videoId },
       data: { views: { increment: 1 } },
+    });
+
+    return video;
+  }
+
+  async publishAndUnPublishVideo(videoId: string, channelId: string) {
+    const video = await this.prisma.$executeRaw`
+      UPDATE "Video"
+      SET "isPublished" = NOT "isPublished"
+      WHERE "id" = ${videoId} AND "channelId" = ${channelId};
+    `;
+
+    return video;
+  }
+
+  async removeVideo(videoId: string, channelId: string) {
+    const video = await this.prisma.video.update({
+      where: { id: videoId, isDeleted: false, channelId },
+      data: { isDeleted: true },
+    });
+
+    return video;
+  }
+
+  async updateVideoDetails(
+    videoId: string,
+    channelId: string,
+    updateVideoDto: Prisma.VideoUpdateInput,
+  ) {
+    const video = await this.prisma.video.update({
+      where: { id: videoId, channelId, isDeleted: false },
+      data: {
+        ...updateVideoDto,
+      },
+      select: VIDEO_DETAILS_SELECT,
     });
 
     return video;

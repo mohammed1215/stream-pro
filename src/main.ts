@@ -18,13 +18,13 @@ async function bootstrap() {
     .setTitle('Your API Title')
     .setDescription('The API description')
     .setVersion('1.0')
-    .addBearerAuth() // Optional: Adds JWT auth support to UI
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
   app.enableCors({
-    origin: '*', // Or restrict to your frontend URL in production
+    origin: '*',
   });
 
   app.useGlobalPipes(

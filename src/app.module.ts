@@ -39,6 +39,7 @@ export const VIDEO_STORAGE = diskStorage({
       useFactory(config: ConfigService) {
         return {
           secret: config.get('JWT_ACCESS_TOKEN_SECRET'),
+          signOptions: { expiresIn: 4 * 60 * 60 },
         };
       },
     }),

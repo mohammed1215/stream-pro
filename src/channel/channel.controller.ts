@@ -32,11 +32,11 @@ import { type ChannelRequestData } from 'src/types/channel.types';
 import { ChannelPreloadInterceptor } from 'src/interceptors/channel-preload.interceptor';
 import { UploadThumbnailDto } from './dto/upload-thumbnail.dto';
 
-@Controller('channels')
+@Controller()
 export class ChannelController {
   constructor(private readonly channelService: ChannelService) {}
 
-  @Post()
+  @Post('owner/channels')
   @UseGuards(AuthGuard)
   @ApiCreatedResponse({
     type: ChannelCreatedResponseDto,
@@ -48,7 +48,7 @@ export class ChannelController {
     return new SuccessResponseShape<CreateChannelResponseDto>(data);
   }
 
-  @Get()
+  @Get('owner/channels')
   @UseGuards(AuthGuard)
   @ApiCreatedResponse({
     type: GetChannelResponseWrapperDto,
@@ -61,7 +61,7 @@ export class ChannelController {
     return new SuccessResponseShape<GetChannelResponseDto>(data);
   }
 
-  @Post('upload-thumbnail')
+  @Post('owner/channels/upload-thumbnail')
   @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('thumbnail'), ChannelPreloadInterceptor)
   @ApiBody({
@@ -82,7 +82,7 @@ export class ChannelController {
     return new SuccessResponseShape({ thumbnailUrl: data.thumbnailUrl });
   }
 
-  @Post('upload-channel-image')
+  @Post('owner/channels/upload-channel-image')
   @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('avatar'), ChannelPreloadInterceptor)
   @ApiBody({

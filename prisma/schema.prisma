@@ -79,6 +79,9 @@ model Comment {
   user    User   @relation(references: [id], fields: [userId])
   videoId String
   video   Video  @relation(fields: [videoId], references: [id])
+
+  @@unique([userId, videoId])
+  @@index([userId, videoId])
 }
 
 model Like {

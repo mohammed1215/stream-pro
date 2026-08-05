@@ -8,6 +8,10 @@ import { VideoRepository } from './repositories/video.repository';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { VideoProcessingService } from 'src/video-processing/video-processing.service';
 import fs from 'fs';
+import { UpdateVideoDto } from './dto/update-video.dto';
+
+import { VIDEO_DETAILS_SELECT } from './repositories/video-select';
+import { Prisma } from 'generated/prisma/client';
 
 @Injectable()
 export class VideosService {
@@ -71,8 +75,29 @@ export class VideosService {
     return this.videoRepo.updateViews(videoId);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} video`;
+  // ================================ Publish Video ==============================
+
+  async publishAndUnPublishVideo(videoId: string, channelId: string) {
+    const data = await this.videoRepo.publishAndUnPublishVideo(
+      videoId,
+      channelId,
+    );
+    if (data === 0) {
+      throw new NotFoundException('video not found or not owned by channel');
+    }
+    return {
+      message: 'video publish status updated successfully',
+      videoId,
+      channelId,
+      isPublished: data === 1,
+    };
+  }
+
+  // ================================ Remove Video ==============================
+
+  async removeVideo(videoId: string, channelId: string) {
+    await this.videoRepo.removeVideo(videoId, channelId);
+    return { message: 'video removed successfully', videoId, channelId };
   }
 
   removeFile(filePath: string) {
@@ -81,5 +106,92 @@ export class VideosService {
         console.log('Error while removing file: ', err.message);
       }
     });
+  }
+
+  // =============================== Update Video Details ==============================
+  async updateVideoDetails(
+    videoId: string,
+    channelId: string,
+    updateVideoDto: UpdateVideoDto,
+  ) {
+    const video = await this.videoRepo.updateVideoDetails(
+      videoId,
+      channelId,
+      updateVideoDto,
+    );
+
+    if (!video) {
+      throw new NotFoundException('video not found or not owned by channel');
+    }
+
+    return video;
+  }
+  async updateVideoThumbnail(
+    videoId: string,
+    channelId: string,
+    thumbnailFile: Express.Multer.File,
+  ) {
+    if (!thumbnailFile) {
+      throw new BadRequestException('thumbnail file is required');
+    }
+    let oldVideo: Prisma.VideoGetPayload<{
+      select: typeof VIDEO_DETAILS_SELECT;
+    }> | null = null;
+    let newVideo: Prisma.VideoGetPayload<{
+      select: typeof VIDEO_DETAILS_SELECT;
+    }> | null = null;
+    try {
+      const imageUrl = await this.cloudinaryService.uploadImage(thumbnailFile);
+      oldVideo = await this.videoRepo.findOneOwnerVideoDetails(videoId);
+      newVideo = await this.videoRepo.updateVideoDetails(videoId, channelId, {
+        thumbnailUrl: imageUrl,
+      });
+    } finally {
+      this.removeFile(thumbnailFile.path);
+      if (
+        oldVideo &&
+        oldVideo.thumbnailUrl &&
+        newVideo &&
+        newVideo.thumbnailUrl &&
+        oldVideo.thumbnailUrl !== newVideo.thumbnailUrl
+      ) {
+        this.cloudinaryService.removeImage(oldVideo.thumbnailUrl);
+      }
+    }
+  }
+
+  async updateVideoMedia(
+    videoId: string,
+    channelId: string,
+    video: Express.Multer.File,
+  ) {
+    if (!video) {
+      throw new BadRequestException('video file is required');
+    }
+
+    let oldVideo: Prisma.VideoGetPayload<{
+      select: typeof VIDEO_DETAILS_SELECT;
+    }> | null = null;
+    let newVideo: Prisma.VideoGetPayload<{
+      select: typeof VIDEO_DETAILS_SELECT;
+    }> | null = null;
+    try {
+      const videoUrl = await this.cloudinaryService.uploadVideo(video);
+      oldVideo = await this.videoRepo.findOneOwnerVideoDetails(videoId);
+      newVideo = await this.videoRepo.updateVideoDetails(videoId, channelId, {
+        videoUrl,
+      });
+    } finally {
+      this.removeFile(video.path);
+      if (
+        oldVideo &&
+        oldVideo.videoUrl &&
+        newVideo &&
+        newVideo.videoUrl &&
+        oldVideo.videoUrl !== newVideo.videoUrl
+      ) {
+        this.cloudinaryService.removeVideo(oldVideo.videoUrl);
+      }
+    }
   }
 }
