@@ -10,7 +10,9 @@ import { JwtUserPayload } from '../user.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(private readonly jwtService: JwtService) {
+    console.log('AuthGuard initialized');
+  }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
@@ -26,6 +28,7 @@ export class AuthGuard implements CanActivate {
       throw new NotFoundException('token not found');
     }
 
+    console.log('Bearer token:', bearerToken);
     const [_, token] = bearerToken.split(' ');
     const payload = await this.jwtService.verifyAsync<JwtUserPayload>(token);
     return payload;

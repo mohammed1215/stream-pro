@@ -14,6 +14,7 @@ import { CommentsModule } from './comments/comments.module';
 import { VideoProcessingService } from './video-processing/video-processing.service';
 import { extname } from 'path';
 import { tmpdir } from 'os';
+import { LoggerInterceptor } from './logger/logger.interceptor';
 
 export const VIDEO_STORAGE = diskStorage({
   destination: tmpdir(),
@@ -48,6 +49,17 @@ export const VIDEO_STORAGE = diskStorage({
     CommentsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, VideoProcessingService],
+  providers: [
+    AppService,
+    VideoProcessingService,
+    {
+      provide: 'APP_INTERCEPTOR',
+      useClass: LoggerInterceptor,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule {
+  constructor() {
+    console.log('AppModule initialized');
+  }
+}
