@@ -28,6 +28,7 @@ model User {
   likes         Like[]
   subscriptions Subscription[]
   watchLaters   WatchLater[]
+  playlists     Playlist[]
 }
 
 model Channel {
@@ -60,11 +61,14 @@ model Video {
   updatedAt    DateTime @default(now()) @updatedAt
   isDeleted    Boolean  @default(false)
 
-  channelId   String
-  channel     Channel      @relation(references: [id], fields: [channelId])
-  comments    Comment[]
-  likes       Like[]
-  watchLaters WatchLater[]
+  searchVector Unsupported("tsvector")?
+
+  channelId      String
+  channel        Channel         @relation(references: [id], fields: [channelId])
+  comments       Comment[]
+  likes          Like[]
+  watchLaters    WatchLater[]
+  playlistVideos PlaylistVideo[]
 }
 
 model Comment {
@@ -127,4 +131,32 @@ model WatchLater {
 
   @@unique([userId, videoId])
   @@index([userId, videoId])
+}
+
+model Playlist {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  isDeleted   Boolean  @default(false)
+
+  userId String
+  user   User            @relation(fields: [userId], references: [id])
+  videos PlaylistVideo[]
+}
+
+model PlaylistVideo {
+  id        String   @id @default(uuid())
+  index     Int      @default(0) @db.Integer
+  createdAt DateTime @default(now())
+
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  videoId    String
+  video      Video    @relation(fields: [videoId], references: [id])
+
+  @@unique([playlistId, videoId])
+  @@index([playlistId, videoId])
 }
