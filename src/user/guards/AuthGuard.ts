@@ -3,8 +3,9 @@ import {
   ExecutionContext,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { JwtUserPayload } from '../user.service';
 
@@ -17,8 +18,17 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
     const bearerToken = request.headers['authorization'];
-    const payload = await this.checkAuthentication(bearerToken);
-    request['user'] = payload;
+    try {
+      const payload = await this.checkAuthentication(bearerToken);
+      request['user'] = payload;
+    } catch (error) {
+      if (error instanceof JsonWebTokenError) {
+        throw new UnauthorizedException(
+          'either token is expired or token is invalid, try logging in again',
+        );
+      }
+      throw error;
+    }
     return true;
   }
 
@@ -29,6 +39,7 @@ export class AuthGuard implements CanActivate {
     }
 
     console.log('Bearer token:', bearerToken);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, token] = bearerToken.split(' ');
     const payload = await this.jwtService.verifyAsync<JwtUserPayload>(token);
     return payload;

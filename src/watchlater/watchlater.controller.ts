@@ -1,15 +1,53 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { WatchlaterService } from './watchlater.service';
 import { CreateWatchlaterDto } from './dto/create-watchlater.dto';
 import { UpdateWatchlaterDto } from './dto/update-watchlater.dto';
+import { User } from 'src/decorators/user-decorator';
+import { JwtUserPayload } from 'src/user/user.service';
+import { AuthGuard } from 'src/user/guards/AuthGuard';
+import { ApiResponse } from '@nestjs/swagger';
 
-@Controller('watchlater')
+@Controller('watchlaters')
 export class WatchlaterController {
   constructor(private readonly watchlaterService: WatchlaterService) {}
 
   @Post()
-  create(@Body() createWatchlaterDto: CreateWatchlaterDto) {
-    return this.watchlaterService.create(createWatchlaterDto);
+  @UseGuards(AuthGuard)
+  @ApiResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'video has been added to watch later',
+        },
+        watchLaterId: { type: 'string' },
+        videoId: { type: 'string' },
+      },
+    },
+  })
+  async addToWatchLater(
+    @User() user: JwtUserPayload,
+    @Body() createWatchlaterDto: CreateWatchlaterDto,
+  ) {
+    const watchLaterData = await this.watchlaterService.addToWatchLater(
+      user.userId,
+      createWatchlaterDto,
+    );
+    return {
+      message: 'video has been added to watch later',
+      watchLaterId: watchLaterData.id,
+      videoId: createWatchlaterDto.videoId,
+    };
   }
 
   @Get()
@@ -23,12 +61,22 @@ export class WatchlaterController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateWatchlaterDto: UpdateWatchlaterDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateWatchlaterDto: UpdateWatchlaterDto,
+  ) {
     return this.watchlaterService.update(+id, updateWatchlaterDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.watchlaterService.remove(+id);
+  @Delete(':watchLaterId')
+  @UseGuards(AuthGuard)
+  removeFromWatchLater(
+    @User() user: JwtUserPayload,
+    @Param('watchLaterId') watchLaterId: string,
+  ) {
+    return this.watchlaterService.removeFromWatchLater(
+      user.userId,
+      watchLaterId,
+    );
   }
 }

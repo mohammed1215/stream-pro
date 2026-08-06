@@ -34,6 +34,8 @@ export class UserService {
     const password = await bcrypt.hash(createUserDto.password, 10);
     const newUser = await this.userRepo.create({ ...createUserDto, password });
 
+    //create watchlater list
+
     //return response
     return newUser;
   }

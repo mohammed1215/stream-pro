@@ -1,4 +1,4 @@
-import { Prisma } from 'generated/prisma/client';
+import { Prisma } from 'src/generated/prisma/client';
 
 export const VIDEO_DETAILS_SELECT = {
   id: true,
@@ -16,6 +16,7 @@ export const VIDEO_DETAILS_SELECT = {
       channelImageUrl: true,
       description: true,
       thumbnailUrl: true,
+      _count: true,
     },
   },
   _count: true,

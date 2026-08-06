@@ -17,6 +17,7 @@ import { tmpdir } from 'os';
 import { LoggerInterceptor } from './logger/logger.interceptor';
 import { LikesModule } from './likes/likes.module';
 import { WatchlaterModule } from './watchlater/watchlater.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 export const VIDEO_STORAGE = diskStorage({
   destination: tmpdir(),
@@ -52,6 +53,7 @@ export const VIDEO_STORAGE = diskStorage({
     CommentsModule,
     LikesModule,
     WatchlaterModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [

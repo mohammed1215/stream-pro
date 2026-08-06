@@ -10,7 +10,7 @@ coverage
 *.local
 *.env
 *.env.*
-generated
+src/generated
 .env
 .env.*
 !.env.example

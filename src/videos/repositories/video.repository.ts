@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateVideoDto } from '../dto/create-video.dto';
-import { UpdateVideoDto } from '../dto/update-video.dto';
 import {
   VIDEO_DETAILS_SELECT,
   VIDEO_LIST_OWNER_SELECT,
   VIDEO_LIST_SELECT,
 } from './video-select';
-import { Prisma } from 'generated/prisma/client';
+import { Prisma } from 'src/generated/prisma/client';
+import { SortByVideo } from '../dto/video-query.dto';
+import { VideoOrderByWithAggregationInput } from 'src/generated/prisma/models';
 
 @Injectable()
 export class VideoRepository {
@@ -45,12 +46,19 @@ export class VideoRepository {
     return video;
   }
 
-  async findAllVideosOfChannel(channelId: string, page: number, limit: number) {
+  async findAllVideosOfChannel(
+    channelId: string,
+    pageNumber: number,
+    pageSize: number,
+    sortBy: SortByVideo,
+  ) {
+    // ordering object
+    const orderBy = this.getVideoOrderByObject(sortBy);
     const videos = await this.prisma.video.findMany({
       where: { channelId, isPublished: true, isDeleted: false },
-      orderBy: { updatedAt: 'asc' },
-      take: limit,
-      skip: (page - 1) * limit,
+      orderBy,
+      take: pageSize,
+      skip: (pageNumber - 1) * pageSize,
       select: VIDEO_LIST_SELECT,
     });
 
@@ -59,14 +67,14 @@ export class VideoRepository {
 
   async findAllVideosOfOwnerChannel(
     channelId: string,
-    page: number,
-    limit: number,
+    pageNumber: number,
+    pageSize: number,
   ) {
     const videos = await this.prisma.video.findMany({
       where: { channelId, isDeleted: false },
       orderBy: { updatedAt: 'asc' },
-      take: limit,
-      skip: (page - 1) * limit,
+      take: pageSize,
+      skip: (pageNumber - 1) * pageSize,
       select: VIDEO_LIST_OWNER_SELECT,
     });
 
@@ -89,6 +97,53 @@ export class VideoRepository {
     });
 
     return video;
+  }
+
+  async searchVideos(query: string, pageNumber: number, pageSize: number) {
+    const skip = (pageNumber - 1) * pageSize;
+    const items = await this.prisma.$queryRaw<
+      [
+        {
+          id: string;
+          title: string;
+          description: string;
+          thumbnailUrl: string;
+          videoUrl: string;
+          isPublished: boolean;
+          createdAt: Date;
+          updatedAt: Date;
+          duration: number;
+          size: number;
+          rank: number;
+          channelId: string;
+          channelName: string;
+          channelProfileImageUrl: string;
+        },
+      ]
+    >`
+      SELECT "Video".id, "Video".title, "Video".description, "Video"."thumbnailUrl", "Video"."videoUrl", "Video"."isPublished", "Video"."createdAt", "Video"."updatedAt", "Video"."duration", "Video"."size", "Video"."channelId" AS "channelId","Channel"."title" AS "channelName", "Channel"."channelImageUrl" AS "channelProfileImageUrl",
+      ts_rank("searchVector", plainto_tsquery('english', ${query})) AS rank
+      FROM "Video"
+      Join "Channel" ON "Video"."channelId" = "Channel"."id"
+      WHERE "searchVector" @@ plainto_tsquery('english', ${query})
+      AND "isPublished" = true
+      ORDER BY rank DESC
+      LIMIT ${pageSize} OFFSET ${skip}
+    `;
+
+    const [{ totalCount }] = await this.prisma.$queryRaw<
+      [{ totalCount: number }]
+    >`
+      SELECT COUNT(*)::integer AS "totalCount"
+      FROM "Video"
+      WHERE "searchVector" @@ plainto_tsquery('english', ${query})
+      AND "isPublished" = true
+    `;
+
+    return {
+      items,
+      totalCount,
+    };
   }
 
   async updateViews(videoId: string) {
@@ -133,5 +188,30 @@ export class VideoRepository {
     });
 
     return video;
+  }
+
+  getVideoOrderByObject(sortBy: SortByVideo): VideoOrderByWithAggregationInput {
+    switch (sortBy) {
+      case SortByVideo.CREATED_ASC:
+        return { updatedAt: 'asc' };
+
+      case SortByVideo.CREATED_DSC:
+        return { updatedAt: 'desc' };
+
+      case SortByVideo.LIKES_ASC:
+        // orderBy?._count?.likes = 'asc';
+        return {};
+      case SortByVideo.LIKES_DSC:
+        // orderBy?._count?.likes = 'dsc';
+        return {};
+      case SortByVideo.VIEWS_ASC:
+        return { views: 'asc' };
+
+      case SortByVideo.VIEWS_DSC:
+        return { views: 'desc' };
+
+      default:
+        return { updatedAt: 'asc' };
+    }
   }
 }

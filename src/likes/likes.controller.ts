@@ -11,8 +11,15 @@ export class LikesController {
 
   @Post(':videoId')
   @UseGuards(AuthGuard)
-  createLike(@Param('videoId') videoId: string, @User() user: JwtUserPayload) {
-    return this.likesService.createLike(user.userId, videoId);
+  async createLike(
+    @Param('videoId') videoId: string,
+    @User() user: JwtUserPayload,
+  ) {
+    const like = await this.likesService.createLike(user.userId, videoId);
+    return {
+      message: 'Like created successfully',
+      like,
+    };
   }
 
   // @Get()
@@ -32,7 +39,11 @@ export class LikesController {
 
   @Delete(':likeId')
   @UseGuards(AuthGuard)
-  remove(@Param('likeId') likeId: string, @User() user: JwtUserPayload) {
-    return this.likesService.removeLike(user.userId, likeId);
+  async remove(@Param('likeId') likeId: string, @User() user: JwtUserPayload) {
+    const like = await this.likesService.removeLike(user.userId, likeId);
+    return {
+      message: 'Like removed successfully',
+      like,
+    };
   }
 }

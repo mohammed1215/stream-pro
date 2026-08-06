@@ -8,5 +8,6 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
   controllers: [ChannelController],
   providers: [ChannelService, ChannelRepository],
   imports: [CloudinaryModule],
+  exports: [ChannelService, ChannelRepository],
 })
 export class ChannelModule {}

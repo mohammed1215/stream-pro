@@ -5,6 +5,7 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
   @ApiProperty() description: string;
   @ApiProperty() commentsCount: number;
   @ApiProperty() likesCount: number;
+  @ApiProperty() channelSubscribersCount: number;
 
   constructor(
     id: string,
@@ -19,6 +20,7 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
     views: number,
     commentsCount: number,
     likesCount: number,
+    channelSubscribersCount: number,
   ) {
     super(
       id,
@@ -34,5 +36,6 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
     this.description = description;
     this.commentsCount = commentsCount;
     this.likesCount = likesCount;
+    this.channelSubscribersCount = channelSubscribersCount;
   }
 }

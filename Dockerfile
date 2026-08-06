@@ -25,7 +25,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-c
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generates the Prisma client into ./generated/prisma/client
+# Generates the Prisma client into ./src/generated/prisma
 RUN npx prisma generate
 
 RUN npm run build
@@ -47,7 +47,6 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-c
 
 COPY --from=build --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
-COPY --from=build --chown=nestjs:nodejs /app/generated ./generated
 COPY --from=build --chown=nestjs:nodejs /app/prisma ./prisma
 COPY --from=build --chown=nestjs:nodejs /app/package.json ./package.json
 

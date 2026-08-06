@@ -11,7 +11,8 @@ import fs from 'fs';
 import { UpdateVideoDto } from './dto/update-video.dto';
 
 import { VIDEO_DETAILS_SELECT } from './repositories/video-select';
-import { Prisma } from 'generated/prisma/client';
+import { Prisma } from 'src/generated/prisma/client';
+import { SortByVideo } from './dto/video-query.dto';
 
 @Injectable()
 export class VideosService {
@@ -55,18 +56,37 @@ export class VideosService {
     }
   }
 
-  getAllVideosOfChannel(channelId: string, page: number, limit: number) {
-    return this.videoRepo.findAllVideosOfChannel(channelId, page, limit);
+  getAllVideosOfChannel(
+    channelId: string,
+    pageNumber: number,
+    pageSize: number,
+    sortBy: SortByVideo,
+  ) {
+    return this.videoRepo.findAllVideosOfChannel(
+      channelId,
+      pageNumber,
+      pageSize,
+      sortBy,
+    );
   }
 
-  getOwnerVideos(channelId: string, page: number, limit: number) {
-    return this.videoRepo.findAllVideosOfOwnerChannel(channelId, page, limit);
+  getOwnerVideos(channelId: string, pageNumber: number, pageSize: number) {
+    return this.videoRepo.findAllVideosOfOwnerChannel(
+      channelId,
+      pageNumber,
+      pageSize,
+    );
   }
 
   async findOneVideoDetails(videoId: string) {
     const videoData = await this.videoRepo.findOneVideoDetails(videoId);
     if (!videoData) throw new NotFoundException();
     return videoData;
+  }
+
+  async searchVideos(query: string, pageNumber: number, pageSize: number) {
+    const data = await this.videoRepo.searchVideos(query, pageNumber, pageSize);
+    return { ...data, pageNumber, pageSize };
   }
 
   // ================================= Updates ==============================
@@ -126,6 +146,7 @@ export class VideosService {
 
     return video;
   }
+
   async updateVideoThumbnail(
     videoId: string,
     channelId: string,

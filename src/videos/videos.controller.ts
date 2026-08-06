@@ -43,6 +43,12 @@ import {
   PaginatedVideosOwnerResponseDto,
   VideoOwnerResponseDto,
 } from './dto/video-owner-response.dto';
+import { SearchVideoDto } from './dto/search-video.dto';
+import {
+  PaginatedSearchVideoResponseDto,
+  SearchVideoResponseDto,
+} from './dto/search-video-response.dto';
+import { VideoQueryDto } from './dto/video-query.dto';
 
 const videoUploadStorage = diskStorage({
   destination: tmpdir(),
@@ -117,13 +123,14 @@ export class VideosController {
   })
   async getAllVideosOfChannel(
     @Param('channelId') channelId: string,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query() videoQueryDto: VideoQueryDto,
   ) {
+    const { pageNumber = 1, pageSize = 10, sortBy } = videoQueryDto;
     const videos = await this.videosService.getAllVideosOfChannel(
       channelId,
-      page,
-      limit,
+      pageNumber,
+      pageSize,
+      sortBy,
     );
 
     // Map the request
@@ -141,7 +148,7 @@ export class VideosController {
       );
     });
 
-    return new PaginatedVideosResponseDto(videoList, page, limit);
+    return new PaginatedVideosResponseDto(videoList, pageNumber, pageSize);
   }
 
   @Get('owner/channel/videos')
@@ -178,6 +185,38 @@ export class VideosController {
     });
     return new PaginatedVideosOwnerResponseDto(videoList, page, limit);
   }
+
+  // ========================== search video ==========================
+  @Get('videos/search')
+  @ApiResponse({
+    status: 200,
+    description: 'Videos searched successfully',
+    type: PaginatedSearchVideoResponseDto,
+  })
+  async searchVideos(@Query() searchVideoDto: SearchVideoDto) {
+    const { query, pageNumber = 1, pageSize = 10 } = searchVideoDto;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { items, totalCount } = await this.videosService.searchVideos(
+      query,
+      pageNumber,
+      pageSize,
+    );
+    const videoList = items.map((video) => {
+      return new SearchVideoResponseDto(
+        video.id,
+        video.title,
+        video.description,
+        video.thumbnailUrl,
+        video.duration,
+        video.videoUrl,
+        video.channelId,
+        video.channelName,
+        video.channelProfileImageUrl,
+      );
+    });
+    return new PaginatedSearchVideoResponseDto(videoList, pageNumber, pageSize);
+  }
+
   // ========================== find one Video Details ==========================
 
   @Get('videos/:videoId')
@@ -201,6 +240,7 @@ export class VideosController {
       videoData.views,
       videoData._count.comments,
       videoData._count.likes,
+      videoData.channel._count.subscriptions,
     );
   }
 
@@ -293,6 +333,7 @@ export class VideosController {
       videoServiceData.views,
       videoServiceData._count.comments,
       videoServiceData._count.likes,
+      videoServiceData.channel._count.subscriptions,
     );
 
     return {
