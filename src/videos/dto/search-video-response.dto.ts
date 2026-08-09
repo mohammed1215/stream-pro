@@ -3,28 +3,25 @@ import { ApiProperty } from '@nestjs/swagger';
 export class SearchVideoResponseDto {
   @ApiProperty() videoId: string;
   @ApiProperty() title: string;
-  @ApiProperty() description: string;
   @ApiProperty() thumbnailUrl: string;
   @ApiProperty() duration: number;
   @ApiProperty() videoUrl: string;
   @ApiProperty() channelId: string;
   @ApiProperty() channelName: string;
-  @ApiProperty() channelProfileImageUrl: string;
+  @ApiProperty() channelProfileImageUrl: string | null;
 
   constructor(
     videoId: string,
     title: string,
-    description: string,
     thumbnailUrl: string,
     duration: number,
     videoUrl: string,
     channelId: string,
     channelName: string,
-    channelProfileImageUrl: string,
+    channelProfileImageUrl: string | null,
   ) {
     this.videoId = videoId;
     this.title = title;
-    this.description = description;
     this.thumbnailUrl = thumbnailUrl;
     this.duration = duration;
     this.videoUrl = videoUrl;

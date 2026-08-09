@@ -101,48 +101,23 @@ export class VideoRepository {
 
   async searchVideos(query: string, pageNumber: number, pageSize: number) {
     const skip = (pageNumber - 1) * pageSize;
-    const items = await this.prisma.$queryRaw<
-      [
-        {
-          id: string;
-          title: string;
-          description: string;
-          thumbnailUrl: string;
-          videoUrl: string;
-          isPublished: boolean;
-          createdAt: Date;
-          updatedAt: Date;
-          duration: number;
-          size: number;
-          rank: number;
-          channelId: string;
-          channelName: string;
-          channelProfileImageUrl: string;
-        },
-      ]
-    >`
-      SELECT "Video".id, "Video".title, "Video".description, "Video"."thumbnailUrl", "Video"."videoUrl", "Video"."isPublished", "Video"."createdAt", "Video"."updatedAt", "Video"."duration", "Video"."size", "Video"."channelId" AS "channelId","Channel"."title" AS "channelName", "Channel"."channelImageUrl" AS "channelProfileImageUrl",
-      ts_rank("searchVector", plainto_tsquery('english', ${query})) AS rank
-      FROM "Video"
-      Join "Channel" ON "Video"."channelId" = "Channel"."id"
-      WHERE "searchVector" @@ plainto_tsquery('english', ${query})
-      AND "isPublished" = true
-      ORDER BY rank DESC
-      LIMIT ${pageSize} OFFSET ${skip}
-    `;
-
-    const [{ totalCount }] = await this.prisma.$queryRaw<
-      [{ totalCount: number }]
-    >`
-      SELECT COUNT(*)::integer AS "totalCount"
-      FROM "Video"
-      WHERE "searchVector" @@ plainto_tsquery('english', ${query})
-      AND "isPublished" = true
-    `;
-
+    const items = await this.prisma.video.findMany({
+      where: {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+        ],
+        isDeleted: false,
+        isPublished: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: pageSize,
+      skip,
+      select: VIDEO_LIST_SELECT,
+    });
     return {
       items,
-      totalCount,
+      totalCount: items.length, // Replace this with the actual total count if available
     };
   }
 

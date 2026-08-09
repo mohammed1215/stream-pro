@@ -205,13 +205,12 @@ export class VideosController {
       return new SearchVideoResponseDto(
         video.id,
         video.title,
-        video.description,
         video.thumbnailUrl,
         video.duration,
         video.videoUrl,
-        video.channelId,
-        video.channelName,
-        video.channelProfileImageUrl,
+        video.channel.id,
+        video.channel.title,
+        video.channel.channelImageUrl,
       );
     });
     return new PaginatedSearchVideoResponseDto(videoList, pageNumber, pageSize);
