@@ -2,16 +2,33 @@ import { Injectable } from '@nestjs/common';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import { UpdatePlaylistDto } from './dto/update-playlist.dto';
 import { PlaylistRepository } from './repositories/playlist.repository';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationType } from 'src/generated/prisma/browser';
 
 @Injectable()
 export class PlaylistsService {
-  constructor(private readonly playlistRepository: PlaylistRepository) {}
-  createPlaylist(userId: string, createPlaylistDto: CreatePlaylistDto) {
-    return this.playlistRepository.createPlaylist(
+  constructor(
+    private readonly playlistRepository: PlaylistRepository,
+    private readonly notificationsService: NotificationsService,
+  ) {}
+  async createPlaylist(userId: string, createPlaylistDto: CreatePlaylistDto) {
+    const playlist = await this.playlistRepository.createPlaylist(
       createPlaylistDto.title,
       userId,
+      createPlaylistDto.isPublic,
       createPlaylistDto.description,
     );
+
+    if (playlist.isPublic === true) {
+      await this.notificationsService.create({
+        actorId: userId,
+        recipientId: userId,
+        contextId: playlist.id,
+        message: `Your playlist ${playlist.title} is now public`,
+        type: NotificationType.PLAYLIST,
+      });
+    }
+    return playlist;
   }
 
   findAllPlaylistsForUser(userId: string) {

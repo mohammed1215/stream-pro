@@ -11,6 +11,7 @@ export class LikeRepository {
         userId,
         videoId,
       },
+      include: { video: { include: { channel: true } }, user: true },
     });
   }
 

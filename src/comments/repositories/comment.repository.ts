@@ -9,6 +9,9 @@ export class CommentRepository {
     try {
       const comment = await this.prismaService.comment.create({
         data: createCommentDto,
+        include: {
+          video: { include: { channel: { include: { user: true } } } },
+        },
       });
       return comment;
     } catch (error) {

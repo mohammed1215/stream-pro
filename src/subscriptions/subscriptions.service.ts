@@ -1,16 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { SubscriptionRepository } from './repositories/subscription.repository';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationType } from 'src/generated/prisma/browser';
 
 @Injectable()
 export class SubscriptionsService {
   constructor(
     private readonly subscriptionRepository: SubscriptionRepository,
+    private readonly notificationService: NotificationsService,
   ) {}
-  createSubscription(channelId: string, userId: string) {
-    return this.subscriptionRepository.createSubscription({
+  async createSubscription(channelId: string, userId: string) {
+    const subscription = await this.subscriptionRepository.createSubscription({
       channel: { connect: { id: channelId } },
       user: { connect: { id: userId } },
     });
+
+    await this.notificationService.create({
+      actorId: userId,
+      recipientId: subscription.channel.userId,
+      contextId: subscription.id,
+      message: `You have subscribed to ${subscription.channel.title}`,
+      type: NotificationType.SUBSCRIPTION,
+    });
+
+    return subscription;
   }
 
   findOwnerChannelSubscriptions(

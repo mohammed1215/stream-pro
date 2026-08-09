@@ -9,6 +9,7 @@ export class SubscriptionRepository {
   async createSubscription(subscriptionData: Prisma.SubscriptionCreateInput) {
     return this.prismaService.subscription.create({
       data: subscriptionData,
+      include: { channel: true, user: true },
     });
   }
 

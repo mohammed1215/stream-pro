@@ -19,6 +19,8 @@ import { LikesModule } from './likes/likes.module';
 import { WatchlaterModule } from './watchlater/watchlater.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { PlaylistsModule } from './playlists/playlists.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 export const VIDEO_STORAGE = diskStorage({
   destination: tmpdir(),
@@ -56,6 +58,8 @@ export const VIDEO_STORAGE = diskStorage({
     WatchlaterModule,
     SubscriptionsModule,
     PlaylistsModule,
+    NotificationsModule,
+    FirebaseModule,
   ],
   controllers: [AppController],
   providers: [

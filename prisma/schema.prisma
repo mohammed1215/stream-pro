@@ -13,22 +13,40 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  password  String
-  avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  isDeleted Boolean  @default(false)
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
 
-  channel       Channel?
-  comments      Comment[]
-  likes         Like[]
-  subscriptions Subscription[]
-  watchLaters   WatchLater[]
-  playlists     Playlist[]
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  name        String
+  password    String?
+  avatarUrl   String?
+  deviceId    String?
+  deviceType  DeviceType?
+  deviceToken String?
+  provider    AuthProvider @default(LOCAL)
+  googleId    String?      @unique
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+  isDeleted   Boolean      @default(false)
+
+  channel                Channel?
+  comments               Comment[]
+  likes                  Like[]
+  subscriptions          Subscription[]
+  watchLaters            WatchLater[]
+  playlists              Playlist[]
+  notificationsRecipient Notification[] @relation(name: "NotificationsRecipient")
+  notificationsActor     Notification[] @relation(name: "NotificationsActor")
+}
+
+enum DeviceType {
+  ANDROID
+  IOS
+  WEB
 }
 
 model Channel {
@@ -42,7 +60,7 @@ model Channel {
   isDeleted       Boolean  @default(false)
 
   userId        String         @unique
-  user          User           @relation(fields: [userId], references: [id])
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   videos        Video[]
   subscriptions Subscription[]
 }
@@ -61,10 +79,8 @@ model Video {
   updatedAt    DateTime @default(now()) @updatedAt
   isDeleted    Boolean  @default(false)
 
-  searchVector Unsupported("tsvector")?
-
   channelId      String
-  channel        Channel         @relation(references: [id], fields: [channelId])
+  channel        Channel         @relation(references: [id], fields: [channelId], onDelete: Cascade)
   comments       Comment[]
   likes          Like[]
   watchLaters    WatchLater[]
@@ -80,9 +96,9 @@ model Comment {
   isDeleted Boolean  @default(false)
 
   userId  String
-  user    User   @relation(references: [id], fields: [userId])
+  user    User   @relation(references: [id], fields: [userId], onDelete: Cascade)
   videoId String
-  video   Video  @relation(fields: [videoId], references: [id])
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@unique([userId, videoId])
   @@index([userId, videoId])
@@ -95,9 +111,9 @@ model Like {
   isDeleted Boolean  @default(false)
 
   videoId String
-  video   Video  @relation(fields: [videoId], references: [id])
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
   userId  String
-  user    User   @relation(fields: [userId], references: [id])
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, videoId])
   @@index([userId, videoId])
@@ -110,9 +126,9 @@ model Subscription {
   isDeleted Boolean  @default(false)
 
   userId    String
-  user      User    @relation(references: [id], fields: [userId])
+  user      User    @relation(references: [id], fields: [userId], onDelete: Cascade)
   channelId String
-  channel   Channel @relation(fields: [channelId], references: [id])
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
   @@unique([userId, channelId])
   @@index([userId, channelId])
@@ -125,9 +141,9 @@ model WatchLater {
   isDeleted Boolean  @default(false)
 
   userId  String
-  user    User   @relation(references: [id], fields: [userId])
+  user    User   @relation(references: [id], fields: [userId], onDelete: Cascade)
   videoId String
-  video   Video  @relation(references: [id], fields: [videoId])
+  video   Video  @relation(references: [id], fields: [videoId], onDelete: Cascade)
 
   @@unique([userId, videoId])
   @@index([userId, videoId])
@@ -143,7 +159,7 @@ model Playlist {
   isDeleted   Boolean  @default(false)
 
   userId String
-  user   User            @relation(fields: [userId], references: [id])
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   videos PlaylistVideo[]
 }
 
@@ -153,10 +169,31 @@ model PlaylistVideo {
   createdAt DateTime @default(now())
 
   playlistId String
-  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
   videoId    String
-  video      Video    @relation(fields: [videoId], references: [id])
+  video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@unique([playlistId, videoId])
   @@index([playlistId, videoId])
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  recipientId String
+  recipient   User             @relation(name: "NotificationsRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User             @relation(name: "NotificationsActor", fields: [actorId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  message     String
+  isRead      Boolean          @default(false)
+  contextId   String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now()) @updatedAt
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  PLAYLIST
+  SUBSCRIPTION
 }

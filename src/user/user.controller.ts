@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtUserPayload, UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -23,6 +24,7 @@ import { User } from 'src/decorators/user-decorator';
 import { ProfileResponseDto } from './dto/profile-response.dto';
 import { ApiExtraModels, ApiTags } from '@nestjs/swagger';
 import { ApiSuccessResponse } from '../decorators/api-success-response-decorator';
+import { GoogleLoginRequestDto } from './dto/google-login-request.dto';
 
 @Controller('')
 @ApiTags('Auth & User')
@@ -56,6 +58,30 @@ export class UserController {
     res.cookie('refreshToken', data.refreshToken, { httpOnly: true });
     return new SuccessResponseShape<LoginResponseDto>({
       accessToken: data.accessToken,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        avatarUrl: data.user.avatarUrl,
+      },
+    });
+  }
+
+  @Post('auth/google')
+  async googleLogin(
+    @Body() googleLoginDto: GoogleLoginRequestDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.userService.googleLogin(googleLoginDto.token);
+    res.cookie('refreshToken', data.refreshToken, { httpOnly: true });
+    return new SuccessResponseShape<LoginResponseDto>({
+      accessToken: data.accessToken,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        avatarUrl: data.user.avatarUrl,
+      },
     });
   }
 

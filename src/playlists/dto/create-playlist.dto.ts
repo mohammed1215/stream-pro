@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreatePlaylistDto {
   @IsString()
@@ -9,4 +9,8 @@ export class CreatePlaylistDto {
   @IsString()
   @IsNotEmpty()
   description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
 }

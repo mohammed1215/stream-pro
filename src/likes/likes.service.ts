@@ -2,12 +2,26 @@ import { Injectable } from '@nestjs/common';
 // import { CreateLikeDto } from './dto/create-like.dto';
 // import { UpdateLikeDto } from './dto/update-like.dto';
 import { LikeRepository } from './repositories/like.repository';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationType } from 'src/generated/prisma/enums';
 
 @Injectable()
 export class LikesService {
-  constructor(private readonly likeRepository: LikeRepository) {}
-  createLike(userId: string, videoId: string) {
-    return this.likeRepository.createLike(userId, videoId);
+  constructor(
+    private readonly likeRepository: LikeRepository,
+    private readonly notificationService: NotificationsService,
+  ) {}
+  async createLike(userId: string, videoId: string) {
+    const like = await this.likeRepository.createLike(userId, videoId);
+    await this.notificationService.create({
+      actorId: userId,
+      recipientId: like.video.channel.userId,
+      contextId: like.videoId,
+      message: `User ${like.user.name} liked your video ${like.video.title}`,
+      type: NotificationType.LIKE,
+    });
+
+    return like;
   }
 
   // findAll() {

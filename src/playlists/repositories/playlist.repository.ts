@@ -14,11 +14,12 @@ export class PlaylistRepository {
   async createPlaylist(
     title: string,
     userId: string,
+    isPublic: boolean = false,
     description?: string,
   ): Promise<Playlist> {
     try {
       const playlist = await this.prismaService.playlist.create({
-        data: { title, userId, description },
+        data: { title, userId, description, isPublic },
       });
       return playlist;
     } catch (error) {
