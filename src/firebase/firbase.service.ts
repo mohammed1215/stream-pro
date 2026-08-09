@@ -15,9 +15,7 @@ export class FirebaseService implements OnModuleInit {
   constructor(private readonly config: ConfigService) {}
 
   async onModuleInit() {
-    const path =
-      this.config.get<string>('FIREBASE_SERVICE_ACCOUNT_PATH') ??
-      './src/firebase/stream-pro-7e2d1-firebase-adminsdk-fbsvc-051010650a.json';
+    const path = this.config.get<string>('FIREBASE_SERVICE_ACCOUNT_PATH') ?? '';
 
     const data = await readFile(path, 'utf8');
     const serviceAccount: AppOptions = JSON.parse(data);
