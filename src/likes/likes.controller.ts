@@ -3,6 +3,7 @@ import { LikesService } from './likes.service';
 import { AuthGuard } from 'src/user/guards/AuthGuard';
 import { User } from 'src/decorators/user-decorator';
 import { JwtUserPayload } from 'src/user/user.service';
+import { ApiBearerAuth } from '@nestjs/swagger';
 // import { UpdateLikeDto } from './dto/update-like.dto';
 
 @Controller('likes')
@@ -11,6 +12,7 @@ export class LikesController {
 
   @Post(':videoId')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   async createLike(
     @Param('videoId') videoId: string,
     @User() user: JwtUserPayload,
@@ -37,10 +39,15 @@ export class LikesController {
   //   return this.likesService.update(+id, updateLikeDto);
   // }
 
-  @Delete(':likeId')
+  @Delete(':videoId')
+  @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  async remove(@Param('likeId') likeId: string, @User() user: JwtUserPayload) {
-    const like = await this.likesService.removeLike(user.userId, likeId);
+  @ApiBearerAuth()
+  async remove(
+    @Param('videoId') videoId: string,
+    @User() user: JwtUserPayload,
+  ) {
+    const like = await this.likesService.removeLike(user.userId, videoId);
     return {
       message: 'Like removed successfully',
       like,

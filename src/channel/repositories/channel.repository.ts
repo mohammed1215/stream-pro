@@ -35,6 +35,104 @@ export class ChannelRepository {
     });
   }
 
+  async findChannelVideosPaginated(
+    channelId: string,
+    userId?: string,
+    pageNumber: number = 1,
+    pageSize: number = 10,
+  ) {
+    const [videos, totalCount] = await Promise.all([
+      this.prisma.video.findMany({
+        where: { channelId, isPublished: true },
+        include: {
+          watchLaters: userId
+            ? { where: { userId }, take: 1, select: { id: true } }
+            : false,
+          likes: userId
+            ? { where: { userId }, take: 1, select: { id: true } }
+            : false,
+        },
+        skip: (pageNumber - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.video.count({ where: { channelId } }),
+    ]);
+
+    return { videos, totalCount };
+  }
+  async exists(channelId: string) {
+    const channel = await this.prisma.channel.findUnique({
+      where: { id: channelId },
+      select: { id: true },
+    });
+    return !!channel;
+  }
+
+  async findOneByIdWithCounts(channelId: string, userId?: string) {
+    const channel = await this.prisma.channel.findUnique({
+      where: { id: channelId },
+      include: {
+        _count: { select: { videos: true, subscriptions: true } },
+      },
+    });
+    if (!channel) return null;
+    const totalViews = await this.prisma.video.aggregate({
+      where: { channelId },
+      _sum: { views: true },
+    });
+
+    const isSubscribed = userId
+      ? await this.prisma.subscription.findFirst({
+          where: { channelId, userId },
+        })
+      : false;
+
+    return {
+      ...channel,
+      totalViews: totalViews._sum.views ?? 0,
+      isSubscribed: !!isSubscribed,
+    };
+  }
+
+  async findChannelPlaylists(
+    channelId: string,
+    pageNumber: number = 1,
+    pageSize: number = 10,
+  ) {
+    const playlists = await this.prisma.playlist.findMany({
+      where: { user: { channel: { id: channelId } }, isPublic: true },
+      include: { _count: { select: { videos: true } } },
+      skip: (pageNumber - 1) * pageSize,
+      take: pageSize,
+    });
+
+    const count = await this.prisma.playlist.count({
+      where: { user: { channel: { id: channelId } }, isPublic: true },
+    });
+    return { playlists, totalCount: count };
+  }
+
+  async findHomeChannel(channelId: string, userId: string | undefined) {
+    const videos = await this.prisma.video.findMany({
+      where: { isPublished: true, channelId },
+      include: {
+        watchLaters: { take: 1, where: { userId } },
+        likes: { take: 1, where: { userId } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    const playlists = await this.prisma.playlist.findMany({
+      where: { isPublic: true, user: { channel: { id: channelId } } },
+      include: { _count: true },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    return { videos, playlists };
+  }
+
   async updateThumbnailUrl(channelId: string, thumbnailUrl: string) {
     return this.prisma.channel.update({
       where: { id: channelId },

@@ -14,7 +14,7 @@ import { SubscriptionsService } from './subscriptions.service';
 import { AuthGuard } from 'src/user/guards/AuthGuard';
 import { User } from 'src/decorators/user-decorator';
 import { JwtUserPayload } from 'src/user/user.service';
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { ChannelPreloadInterceptor } from 'src/interceptors/channel-preload.interceptor';
 import { type ChannelRequestData } from 'src/types/channel.types';
 import { Channel } from 'src/decorators/channel-decorator';
@@ -39,6 +39,7 @@ export class SubscriptionsController {
     },
   })
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   async create(
     @Param('channelId') channelId: string,
     @User() user: JwtUserPayload,
@@ -53,6 +54,7 @@ export class SubscriptionsController {
 
   @Get('owner/subscriptions')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @UseInterceptors(ChannelPreloadInterceptor)
   async findOwnerChannelSubscriptions(
     @Channel() channel: ChannelRequestData,
@@ -110,16 +112,14 @@ export class SubscriptionsController {
   //   return this.subscriptionsService.update(+id, updateSubscriptionDto);
   // }
 
-  @Delete('subscriptions/:subscriptionId')
+  @Delete('subscriptions/:channelId')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   async removeSubscription(
-    @Param('subscriptionId') subscriptionId: string,
+    @Param('channelId') channelId: string,
     @User() user: JwtUserPayload,
   ) {
-    await this.subscriptionsService.removeSubscription(
-      subscriptionId,
-      user.userId,
-    );
+    await this.subscriptionsService.removeSubscription(channelId, user.userId);
     return { message: 'Subscription removed successfully' };
   }
 }

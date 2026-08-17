@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class PlaylistResponseDto {
+export class FindPlaylistWithVideoResponseDto {
   @ApiProperty() playlistId: string;
   @ApiProperty() title: string;
   @ApiProperty({ nullable: true }) description: string | null;
   @ApiProperty() isPublic: boolean;
   @ApiProperty() createdAt: Date;
   @ApiProperty() updatedAt: Date;
+  @ApiProperty() hasVideo: boolean;
 
   constructor(
     playlistId: string,
@@ -15,6 +16,7 @@ export class PlaylistResponseDto {
     isPublic: boolean,
     createdAt: Date,
     updatedAt: Date,
+    hasVideo: boolean,
   ) {
     this.playlistId = playlistId;
     this.title = title;
@@ -22,12 +24,13 @@ export class PlaylistResponseDto {
     this.isPublic = isPublic;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.hasVideo = hasVideo;
   }
 }
 
-export class PaginatedPlaylistResponseDto {
-  @ApiProperty({ type: [PlaylistResponseDto] })
-  items: PlaylistResponseDto[];
+export class PaginatedFindPlaylistWithVideoResponseDto {
+  @ApiProperty({ type: [FindPlaylistWithVideoResponseDto] })
+  items: FindPlaylistWithVideoResponseDto[];
   @ApiProperty() totalCount: number;
   @ApiProperty() pageNumber: number;
   @ApiProperty() pageSize: number;
@@ -35,7 +38,7 @@ export class PaginatedPlaylistResponseDto {
   @ApiProperty() hasNextPage: boolean;
 
   constructor(
-    items: PlaylistResponseDto[],
+    items: FindPlaylistWithVideoResponseDto[],
     totalCount: number,
     pageNumber: number,
     pageSize: number,

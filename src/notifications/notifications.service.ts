@@ -45,7 +45,10 @@ export class NotificationsService {
         user.deviceToken,
         NOTIFICATION_TITLES[notification.type],
         notification.message,
-        { contextId: notification.contextId ?? '' },
+        {
+          contextId: notification.contextId ?? '',
+          notificationId: notification.id,
+        },
       );
     }
     return notification;

@@ -35,15 +35,43 @@ export class PlaylistsService {
     return this.playlistRepository.findAllPlaylistsForUser(userId);
   }
 
-  findVideosOfPlaylist(userId: string, playlistId: string) {
-    return this.playlistRepository.findVideosOfPlaylist(userId, playlistId);
+  async findVideosOfPlaylist(
+    userId: string,
+    playlistId: string,
+    pageNumber = 1,
+    pageSize = 10,
+  ) {
+    const { videos, count } =
+      await this.playlistRepository.findVideosOfPlaylist(
+        userId,
+        playlistId,
+        pageNumber,
+        pageSize,
+      );
+
+    const totalPages = Math.ceil(count / pageSize);
+    const hasNextPage = pageNumber < totalPages;
+
+    return {
+      videos,
+      totalCount: count,
+      pageNumber,
+      pageSize,
+      totalPages,
+      hasNextPage,
+    };
   }
 
-  findPlaylistsWithVideoBlongsToItOrNot(videoId: string, userId: string) {
-    return this.playlistRepository.findPlaylistsWithVideoBlongsToItOrNot(
-      videoId,
-      userId,
-    );
+  async findPlaylistsWithVideoBlongsToItOrNot(videoId: string, userId: string) {
+    const playlists =
+      await this.playlistRepository.findPlaylistsWithVideoBlongsToItOrNot(
+        videoId,
+        userId,
+      );
+    return playlists.map((playlist) => ({
+      ...playlist,
+      hasVideo: playlist.videos.length > 0,
+    }));
   }
 
   addVideoToPlaylist(userId: string, playlistId: string, videoId: string) {

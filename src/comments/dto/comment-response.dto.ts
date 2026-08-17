@@ -5,11 +5,26 @@ export class CommentResponseDto {
   @ApiProperty() content!: string;
   @ApiProperty() isEditted!: boolean;
   @ApiProperty() userId!: string;
-  constructor(id: string, content: string, isEditted: boolean, userId: string) {
+  @ApiProperty() userName!: string;
+  @ApiProperty({ nullable: true }) userProfileImage!: string | null;
+  @ApiProperty() createdAt!: Date;
+
+  constructor(
+    id: string,
+    content: string,
+    isEditted: boolean,
+    userId: string,
+    userName: string,
+    userProfileImage: string | null,
+    createdAt: Date,
+  ) {
     this.commentId = id;
     this.content = content;
     this.isEditted = isEditted;
     this.userId = userId;
+    this.userName = userName;
+    this.userProfileImage = userProfileImage;
+    this.createdAt = createdAt;
   }
 }
 

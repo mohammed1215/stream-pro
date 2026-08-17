@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateVideoDto } from '../dto/create-video.dto';
 import {
+  VIDEO_DETAILS_OWNER_SELECT,
   VIDEO_DETAILS_SELECT,
   VIDEO_LIST_OWNER_SELECT,
   VIDEO_LIST_SELECT,
@@ -78,22 +79,84 @@ export class VideoRepository {
       select: VIDEO_LIST_OWNER_SELECT,
     });
 
-    return videos;
+    const totalCount = await this.prisma.video.count({
+      where: { channelId, isDeleted: false },
+    });
+
+    return { videos, totalCount };
   }
 
-  async findOneVideoDetails(videoId: string) {
+  async findOneVideoDetails(videoId: string, userId?: string) {
+    if (userId) {
+      const video = await this.prisma.video.findUnique({
+        where: { id: videoId, isDeleted: false, isPublished: true },
+        select: {
+          id: true,
+          description: true,
+          title: true,
+          views: true,
+          duration: true,
+          createdAt: true,
+          updatedAt: true,
+          videoUrl: true,
+          thumbnailUrl: true,
+          likes: {
+            where: { userId },
+            select: { id: true },
+            take: 1,
+          },
+          channel: {
+            select: {
+              id: true,
+              title: true,
+              channelImageUrl: true,
+              description: true,
+              thumbnailUrl: true,
+              _count: true,
+              subscriptions: {
+                where: { userId },
+                select: { id: true },
+                take: 1,
+              },
+            },
+          },
+          _count: true,
+        },
+      });
+
+      if (!video) return null;
+
+      return {
+        ...video,
+        channel: {
+          ...video.channel,
+          isSubscribed: video.channel.subscriptions.length > 0,
+        },
+        isLikedByUser: video.likes.length > 0,
+      };
+    }
+
     const video = await this.prisma.video.findUnique({
       where: { id: videoId, isDeleted: false, isPublished: true },
       select: VIDEO_DETAILS_SELECT,
     });
 
-    return video;
+    if (!video) return null;
+
+    return {
+      ...video,
+      channel: {
+        ...video.channel,
+        isSubscribed: null,
+      },
+      isLikedByUser: null,
+    };
   }
 
   async findOneOwnerVideoDetails(videoId: string) {
     const video = await this.prisma.video.findUnique({
       where: { id: videoId, isDeleted: false },
-      select: VIDEO_DETAILS_SELECT,
+      select: VIDEO_DETAILS_OWNER_SELECT,
     });
 
     return video;

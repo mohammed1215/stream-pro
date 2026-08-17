@@ -41,18 +41,31 @@ export class PlaylistRepository {
     return playlists;
   }
 
-  async findVideosOfPlaylist(userId: string, playlistId: string) {
+  async findVideosOfPlaylist(
+    userId: string,
+    playlistId: string,
+    pageNumber = 1,
+    pageSize = 10,
+  ) {
     const videos = await this.prismaService.playlistVideo.findMany({
       where: { playlistId, playlist: { userId } },
       orderBy: { index: 'asc' },
+      skip: (pageNumber - 1) * pageSize,
+      take: pageSize,
+      include: { video: true },
     });
-    return videos;
+
+    const count = await this.prismaService.playlistVideo.count({
+      where: { playlistId, playlist: { userId } },
+    });
+
+    return { videos, count };
   }
 
-  findPlaylistsWithVideoBlongsToItOrNot(videoId: string, userId: string) {
+  async findPlaylistsWithVideoBlongsToItOrNot(videoId: string, userId: string) {
     return this.prismaService.playlist.findMany({
       where: { userId },
-      include: { videos: { where: { videoId } } },
+      include: { videos: { where: { videoId }, take: 1 } },
     });
   }
 

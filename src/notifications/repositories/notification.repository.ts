@@ -26,12 +26,16 @@ export class NotificationRepository {
   }
 
   async getNotificationsForUser(userId: string, pageNumber = 1, pageSize = 10) {
-    return await this.prisma.notification.findMany({
+    const notifications = await this.prisma.notification.findMany({
       where: { recipientId: userId },
       orderBy: { createdAt: 'desc' },
       skip: (pageNumber - 1) * pageSize,
       take: pageSize,
     });
+    const count = await this.prisma.notification.count({
+      where: { recipientId: userId },
+    });
+    return { notifications, count };
   }
 
   async markNotificationAsRead(userId: string, notificationId: string) {

@@ -22,7 +22,7 @@ import { RegisterResponseDto } from './dto/register-response.dto';
 import { AuthGuard } from './guards/AuthGuard';
 import { User } from 'src/decorators/user-decorator';
 import { ProfileResponseDto } from './dto/profile-response.dto';
-import { ApiExtraModels, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiExtraModels, ApiTags } from '@nestjs/swagger';
 import { ApiSuccessResponse } from '../decorators/api-success-response-decorator';
 import { GoogleLoginRequestDto } from './dto/google-login-request.dto';
 
@@ -88,6 +88,7 @@ export class UserController {
   // =========================== Profile =========================
   @Get('profile/me')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiSuccessResponse(ProfileResponseDto)
   async getProfile(@User() user: JwtUserPayload) {
     const data = await this.userService.getProfile(user.userId);

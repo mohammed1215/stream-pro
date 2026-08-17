@@ -24,6 +24,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { SuccessResponseShape } from '../user/dto/ResponseShape.dto';
 import { ChannelPreloadInterceptor } from '../interceptors/channel-preload.interceptor';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
@@ -49,6 +50,9 @@ import {
   SearchVideoResponseDto,
 } from './dto/search-video-response.dto';
 import { VideoQueryDto } from './dto/video-query.dto';
+import { User } from 'src/decorators/user-decorator';
+import { JwtUserPayload } from 'src/user/user.service';
+import { OptionalAuthGuard } from 'src/user/guards/OptionalAuthGuard';
 
 const videoUploadStorage = diskStorage({
   destination: tmpdir(),
@@ -85,6 +89,7 @@ export class VideosController {
   @ApiCreatedResponse({ type: VideoCreatedResponseDto })
   @Post('owner/videos')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'thumbnail' }, { name: 'video' }], {
       storage: videoUploadStorage,
@@ -153,6 +158,7 @@ export class VideosController {
 
   @Get('owner/channel/videos')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @UseInterceptors(ChannelPreloadInterceptor)
   @ApiResponse({
     status: 200,
@@ -164,7 +170,7 @@ export class VideosController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    const videos = await this.videosService.getOwnerVideos(
+    const { videos, ...rest } = await this.videosService.getOwnerVideos(
       channel.id,
       page,
       limit,
@@ -181,9 +187,16 @@ export class VideosController {
         video.duration,
         video.views,
         video.isPublished,
+        video.description,
+        video.createdAt,
       );
     });
-    return new PaginatedVideosOwnerResponseDto(videoList, page, limit);
+    return new PaginatedVideosOwnerResponseDto({
+      items: videoList,
+      pageNumber: page,
+      pageSize: limit,
+      ...rest,
+    });
   }
 
   // ========================== search video ==========================
@@ -208,9 +221,11 @@ export class VideosController {
         video.thumbnailUrl,
         video.duration,
         video.videoUrl,
+        video.views,
         video.channel.id,
         video.channel.title,
         video.channel.channelImageUrl,
+        video.updatedAt,
       );
     });
     return new PaginatedSearchVideoResponseDto(videoList, pageNumber, pageSize);
@@ -218,28 +233,42 @@ export class VideosController {
 
   // ========================== find one Video Details ==========================
 
+  //TODO: Allow not logged in users to view video details, but without isSubscribed property
+  // we will have to make Guard optional for this route
   @Get('videos/:videoId')
+  @UseGuards(OptionalAuthGuard)
   @ApiResponse({
     status: 200,
     description: 'Video details retrieved successfully',
     type: VideoDetailsResponseDto,
   })
-  async findOne(@Param('videoId') videoId: string) {
-    const videoData = await this.videosService.findOneVideoDetails(videoId);
+  async findOne(
+    @Param('videoId') videoId: string,
+    @User() user?: JwtUserPayload,
+  ) {
+    const videoData = await this.videosService.findOneVideoDetails(
+      videoId,
+      user?.userId,
+    );
+    const channelDetails = videoData.channel;
+
     return new VideoDetailsResponseDto(
       videoData.id,
       videoData.title,
       videoData.description,
       videoData.videoUrl,
       videoData.thumbnailUrl,
-      videoData.channel.id,
-      videoData.channel.title,
-      videoData.channel.channelImageUrl,
+      channelDetails.id,
+      channelDetails.title,
+      channelDetails.channelImageUrl,
       videoData.duration,
       videoData.views,
       videoData._count.comments,
       videoData._count.likes,
-      videoData.channel._count.subscriptions,
+      channelDetails._count.subscriptions,
+      channelDetails.isSubscribed,
+      videoData.isLikedByUser,
+      videoData.createdAt,
     );
   }
 
@@ -266,6 +295,7 @@ export class VideosController {
     },
   })
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @UseInterceptors(ChannelPreloadInterceptor)
   async publishAndUnPublishVideo(
     @Param('videoId') videoId: string,
@@ -282,6 +312,7 @@ export class VideosController {
 
   @Delete('owner/videos/:videoId')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @UseInterceptors(ChannelPreloadInterceptor)
   async removeVideo(
     @Param('videoId') videoId: string,
@@ -296,6 +327,7 @@ export class VideosController {
   // ========================== Update Video Details ==========================
   @Patch('owner/videos/:videoId')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @UseInterceptors(ChannelPreloadInterceptor)
   @ApiResponse({
     status: 200,
@@ -333,6 +365,9 @@ export class VideosController {
       videoServiceData._count.comments,
       videoServiceData._count.likes,
       videoServiceData.channel._count.subscriptions,
+      null,
+      null,
+      videoServiceData.createdAt,
     );
 
     return {
@@ -345,6 +380,7 @@ export class VideosController {
   @Patch('owner/videos/:videoId/thumbnail')
   @ApiConsumes('multipart/form-data')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @UseInterceptors(
     ChannelPreloadInterceptor,
     FileFieldsInterceptor([{ name: 'thumbnail', maxCount: 1 }], {
@@ -401,6 +437,7 @@ export class VideosController {
   @ApiConsumes('multipart/form-data')
   @Patch('owner/videos/:videoId/media')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @UseInterceptors(
     ChannelPreloadInterceptor,
     FileFieldsInterceptor([{ name: 'video', maxCount: 1 }], {

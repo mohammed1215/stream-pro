@@ -47,14 +47,30 @@ export class PaginatedNotificationResponseDto {
   pageSize: number;
   @ApiProperty()
   pageNumber: number;
+  @ApiProperty()
+  totalPages: number;
+  @ApiProperty()
+  totalCount: number;
+  @ApiProperty()
+  hasNextPage: boolean;
+  @ApiProperty()
+  unreadTotal: number;
 
   constructor(
     items: NotificationResponseDto[],
     pageSize: number,
     pageNumber: number,
+    totalPages: number,
+    totalCount: number,
+    hasNextPage: boolean,
+    unreadTotal: number,
   ) {
     this.items = items;
     this.pageNumber = pageNumber;
     this.pageSize = pageSize;
+    this.totalPages = totalPages;
+    this.totalCount = totalCount;
+    this.hasNextPage = hasNextPage;
+    this.unreadTotal = unreadTotal;
   }
 }

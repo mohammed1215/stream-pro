@@ -6,6 +6,9 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
   @ApiProperty() commentsCount: number;
   @ApiProperty() likesCount: number;
   @ApiProperty() channelSubscribersCount: number;
+  @ApiProperty({ nullable: true }) isSubscribed: boolean | null;
+  @ApiProperty({ nullable: true }) isLiked: boolean | null;
+  @ApiProperty() createdAt: Date;
 
   constructor(
     id: string,
@@ -21,6 +24,9 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
     commentsCount: number,
     likesCount: number,
     channelSubscribersCount: number,
+    isSubscribed: boolean | null,
+    isLiked: boolean | null,
+    createdAt: Date,
   ) {
     super(
       id,
@@ -37,5 +43,8 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
     this.commentsCount = commentsCount;
     this.likesCount = likesCount;
     this.channelSubscribersCount = channelSubscribersCount;
+    this.isSubscribed = isSubscribed;
+    this.isLiked = isLiked;
+    this.createdAt = createdAt;
   }
 }

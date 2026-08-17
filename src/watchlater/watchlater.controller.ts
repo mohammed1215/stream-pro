@@ -14,7 +14,7 @@ import { UpdateWatchlaterDto } from './dto/update-watchlater.dto';
 import { User } from 'src/decorators/user-decorator';
 import { JwtUserPayload } from 'src/user/user.service';
 import { AuthGuard } from 'src/user/guards/AuthGuard';
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 
 @Controller('watchlaters')
 export class WatchlaterController {
@@ -22,6 +22,7 @@ export class WatchlaterController {
 
   @Post()
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiResponse({
     schema: {
       type: 'object',
@@ -70,6 +71,7 @@ export class WatchlaterController {
 
   @Delete(':watchLaterId')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   removeFromWatchLater(
     @User() user: JwtUserPayload,
     @Param('watchLaterId') watchLaterId: string,

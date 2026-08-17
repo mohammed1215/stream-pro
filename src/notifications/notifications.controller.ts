@@ -1,8 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
   Patch,
   Param,
   Delete,
@@ -18,7 +16,7 @@ import {
   PaginatedNotificationResponseDto,
 } from './dto/notification-response.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 
 @Controller('notifications')
 export class NotificationsController {
@@ -33,12 +31,13 @@ export class NotificationsController {
 
   @Get()
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   async findAll(
     @User() loggedInUser: JwtUserPayload,
     @Query()
     query: NotificationQueryDto,
   ) {
-    const notifications = await this.notificationsService.findAll(
+    const { notifications, count } = await this.notificationsService.findAll(
       loggedInUser.userId,
       query.pageNumber ?? 1,
       query.pageSize ?? 10,
@@ -62,6 +61,10 @@ export class NotificationsController {
       notificationList,
       query.pageSize ?? 10,
       query.pageNumber ?? 1,
+      Math.ceil(count / (query.pageSize ?? 10)),
+      count,
+      query.pageNumber! * (query.pageSize ?? 10) < count,
+      notifications.filter((notification) => !notification.isRead).length,
     );
   }
 
@@ -75,6 +78,7 @@ export class NotificationsController {
 
   @Patch()
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiResponse({
     schema: {
       type: 'object',
@@ -93,6 +97,7 @@ export class NotificationsController {
 
   @Patch(':notificationId')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   async markAsRead(
     @User() loggedInUser: JwtUserPayload,
     @Param('notificationId') notificationId: string,
@@ -125,6 +130,7 @@ export class NotificationsController {
   // // ========================== DELETE ==========================
   @Delete(':notificationId')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiResponse({
     schema: {
       type: 'object',
@@ -149,6 +155,7 @@ export class NotificationsController {
 
   @Delete()
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiResponse({
     schema: {
       type: 'object',

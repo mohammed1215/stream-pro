@@ -2,8 +2,10 @@ import {
   Controller,
   Get,
   NotFoundException,
+  Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -22,7 +24,6 @@ import {
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
-  getSchemaPath,
 } from '@nestjs/swagger';
 import {
   GetChannelResponseDto,
@@ -33,6 +34,18 @@ import { Channel } from '../decorators/channel-decorator';
 import { type ChannelRequestData } from 'src/types/channel.types';
 import { ChannelPreloadInterceptor } from 'src/interceptors/channel-preload.interceptor';
 import { UploadThumbnailDto } from './dto/upload-thumbnail.dto';
+import { GetChannelDetailsResponseDto } from './dto/get-channel-details-response.dto';
+import { PaginatedChannelQueryDto } from './dto/paginated-channel-videos-query.dto';
+import {
+  ChannelVideoResponseDto,
+  PaginatedChannelVideosResponseDto,
+} from './dto/get-channel-videos-response.dto';
+import { OptionalAuthGuard } from 'src/user/guards/OptionalAuthGuard';
+import {
+  GetChannelPlaylistResponseDto,
+  PaginatedChannelPlaylistsResponseDto,
+} from './dto/get-channel-playlists-response.dto';
+import { ChannelHomeResponseDto } from './dto/channel-home-response.dto';
 
 @Controller()
 export class ChannelController {
@@ -40,6 +53,7 @@ export class ChannelController {
 
   @Post('owner/channels')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiCreatedResponse({
     type: ChannelCreatedResponseDto,
     description: 'Channel created successfully',
@@ -52,6 +66,7 @@ export class ChannelController {
 
   @Get('owner/channels')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiCreatedResponse({
     type: GetChannelResponseWrapperDto,
     description: 'get user channel',
@@ -61,6 +76,145 @@ export class ChannelController {
     const data = await this.channelService.getChannel(user.userId);
     if (!data) throw new NotFoundException('channel was not found');
     return new SuccessResponseShape<GetChannelResponseDto>(data);
+  }
+
+  @Get('channels/:channelId')
+  @UseGuards(OptionalAuthGuard)
+  async getChannelDetails(
+    @Param('channelId') channelId: string,
+    @User() user: JwtUserPayload | undefined,
+  ) {
+    const channel = await this.channelService.getChannelDetails(
+      channelId,
+      user?.userId,
+    );
+
+    return new GetChannelDetailsResponseDto({
+      channelId: channel.id,
+      title: channel.title,
+      description: channel.description,
+      thumbnailUrl: channel.thumbnailUrl,
+      channelImageUrl: channel.channelImageUrl,
+      videosCount: channel._count.videos,
+      subscriptionsCount: channel._count.subscriptions,
+      totalViews: channel.totalViews,
+      isSubscribed: channel.isSubscribed,
+      createdAt: channel.createdAt,
+      updatedAt: channel.updatedAt,
+    });
+  }
+
+  @Get('channels/:channelId/videos')
+  @UseGuards(OptionalAuthGuard)
+  async getChannelVideos(
+    @Param('channelId') channelId: string,
+    @Query() query: PaginatedChannelQueryDto,
+    @User() user: JwtUserPayload | undefined,
+  ) {
+    const { videos, ...rest } = await this.channelService.getChannelVideos(
+      channelId,
+      user?.userId,
+      query,
+    );
+
+    const videoList = videos.map(
+      (video) =>
+        new ChannelVideoResponseDto({
+          videoId: video.id,
+          videoTitle: video.title,
+          videoDescription: video.description,
+          videoUrl: video.videoUrl,
+          thumbnailUrl: video.thumbnailUrl,
+          views: video.views,
+          createdAt: video.createdAt,
+          updatedAt: video.updatedAt,
+          isInWatchLater: video.watchLaters
+            ? video.watchLaters.length > 0
+            : false,
+          isLikedByUser: video.likes ? video.likes.length > 0 : false,
+        }),
+    );
+
+    return new PaginatedChannelVideosResponseDto({
+      items: videoList,
+      pageNumber: query.pageNumber ?? 1,
+      pageSize: query.pageSize ?? 10,
+      ...rest,
+    });
+  }
+
+  @Get('channels/:channelId/playlists')
+  async getChannelPlaylists(
+    @Param('channelId') channelId: string,
+    @Query() query: PaginatedChannelQueryDto,
+  ) {
+    const { playlists, ...rest } =
+      await this.channelService.getChannelPlaylists(channelId, query);
+    const playlistList = playlists.map(
+      (playlist) =>
+        new GetChannelPlaylistResponseDto({
+          id: playlist.id,
+          title: playlist.title,
+          description: playlist.description,
+          createdAt: playlist.createdAt,
+          updatedAt: playlist.updatedAt,
+          isPublic: playlist.isPublic,
+          videosCount: playlist._count.videos,
+        }),
+    );
+    return new PaginatedChannelPlaylistsResponseDto({
+      items: playlistList,
+      pageNumber: query.pageNumber ?? 1,
+      pageSize: query.pageSize ?? 10,
+      ...rest,
+    });
+  }
+
+  @Get('channels/:channelId/home')
+  @UseGuards(OptionalAuthGuard)
+  async getChannelHome(
+    @Param('channelId') channelId: string,
+    @User() user: JwtUserPayload | undefined,
+  ) {
+    const channel = await this.channelService.getChannelHome(
+      channelId,
+      user?.userId,
+    );
+    const videoList = channel.videos.map(
+      (video) =>
+        new ChannelVideoResponseDto({
+          videoId: video.id,
+          videoTitle: video.title,
+          videoDescription: video.description,
+          videoUrl: video.videoUrl,
+          thumbnailUrl: video.thumbnailUrl,
+          views: video.views,
+          createdAt: video.createdAt,
+          updatedAt: video.updatedAt,
+          isInWatchLater: video.watchLaters
+            ? video.watchLaters.length > 0
+            : false,
+          isLikedByUser: video.likes ? video.likes.length > 0 : false,
+        }),
+    );
+
+    const playlistList = channel.playlists.map(
+      (playlist) =>
+        new GetChannelPlaylistResponseDto({
+          id: playlist.id,
+          title: playlist.title,
+          description: playlist.description,
+          createdAt: playlist.createdAt,
+          updatedAt: playlist.updatedAt,
+          isPublic: playlist.isPublic,
+          videosCount: playlist._count.videos,
+        }),
+    );
+
+    return new ChannelHomeResponseDto({
+      videos: videoList,
+      playlists: playlistList,
+    });
   }
 
   @Patch('owner/channels/upload-thumbnail')

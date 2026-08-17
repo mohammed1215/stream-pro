@@ -17,7 +17,7 @@ import { UpdateCommentDto } from './dto/update-comment.dto';
 import { AuthGuard } from 'src/user/guards/AuthGuard';
 import { User } from 'src/decorators/user-decorator';
 import { JwtUserPayload } from 'src/user/user.service';
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import {
   CommentResponseDto,
   PaginatedCommentsResponseDto,
@@ -29,6 +29,7 @@ export class CommentsController {
 
   @Post(':videoId')
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiResponse({
     schema: {
       type: 'object',
@@ -81,6 +82,9 @@ export class CommentsController {
           comment.content,
           comment.isEditted,
           comment.userId,
+          comment.user.name,
+          comment.user.avatarUrl,
+          comment.createdAt,
         ),
     );
 
@@ -115,6 +119,7 @@ export class CommentsController {
   }
 
   @Delete(':commentId')
+  @ApiBearerAuth()
   @ApiResponse({
     schema: {
       type: 'object',

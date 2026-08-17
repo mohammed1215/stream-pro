@@ -15,9 +15,9 @@ export class LikeRepository {
     });
   }
 
-  async removeLike(userId: string, likeId: string) {
-    return this.prisma.like.delete({
-      where: { userId, id: likeId },
+  async removeLike(userId: string, videoId: string) {
+    return this.prisma.like.deleteMany({
+      where: { userId, videoId },
     });
   }
 }

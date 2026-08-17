@@ -36,7 +36,7 @@ export class LikesService {
   //   return `This action updates a #${id} like`;
   // }
 
-  removeLike(userId: string, likeId: string) {
-    return this.likeRepository.removeLike(userId, likeId);
+  removeLike(userId: string, videoId: string) {
+    return this.likeRepository.removeLike(userId, videoId);
   }
 }

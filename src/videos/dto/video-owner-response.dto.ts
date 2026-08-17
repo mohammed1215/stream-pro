@@ -11,6 +11,8 @@ export class VideoOwnerResponseDto {
   @ApiProperty() duration: number;
   @ApiProperty() views: number;
   @ApiProperty() isPublished: boolean;
+  @ApiProperty() description: string;
+  @ApiProperty() createdAt: Date;
 
   constructor(
     id: string,
@@ -23,6 +25,8 @@ export class VideoOwnerResponseDto {
     duration: number,
     views: number,
     isPublished: boolean,
+    description: string,
+    createdAt: Date,
   ) {
     this.videoId = id;
     this.title = title;
@@ -34,6 +38,8 @@ export class VideoOwnerResponseDto {
     this.duration = duration;
     this.views = views;
     this.isPublished = isPublished;
+    this.description = description;
+    this.createdAt = createdAt;
   }
 }
 
@@ -42,14 +48,22 @@ export class PaginatedVideosOwnerResponseDto {
   items: VideoOwnerResponseDto[];
   @ApiProperty() pageNumber: number;
   @ApiProperty() pageSize: number;
+  @ApiProperty() totalPages: number;
+  @ApiProperty() totalCount: number;
+  @ApiProperty() hasNextPage: boolean;
 
-  constructor(
-    items: VideoOwnerResponseDto[],
-    pageNumber: number,
-    pageSize: number,
-  ) {
+  constructor({
+    items,
+    pageNumber,
+    pageSize,
+    totalCount,
+    hasNextPage,
+  }: PaginatedVideosOwnerResponseDto) {
     this.items = items;
     this.pageNumber = pageNumber;
     this.pageSize = pageSize;
+    this.totalPages = Math.ceil(totalCount / pageSize);
+    this.totalCount = totalCount;
+    this.hasNextPage = hasNextPage;
   }
 }

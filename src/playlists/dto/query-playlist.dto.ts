@@ -1,21 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsInt, Max, Min } from 'class-validator';
 
-export class NotificationQueryDto {
+export class QueryPlaylistDto {
   @ApiProperty({ required: false, default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
   @Min(1)
   @Max(100)
+  @Type(() => Number)
+  @IsInt()
   pageNumber?: number = 1;
 
   @ApiProperty({ required: false, default: 10 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
   @Min(1)
   @Max(100)
+  @Type(() => Number)
+  @IsInt()
   pageSize?: number = 10;
 }

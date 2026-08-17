@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build Docker & Deploy to MonsterASP
 
 on:
   push:
@@ -11,7 +11,10 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  # ==========================================
+  # JOB 1: BUILD & PUSH DOCKER IMAGE (UBUNTU)
+  # ==========================================
+  build-and-push-docker:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,3 +58,52 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ==========================================
+  # JOB 2: DEPLOY TO MONSTERASP (WINDOWS)
+  # ==========================================
+  deploy-monsterasp:
+    # MUST be windows-latest so native packages (like bcrypt) compile for MonsterASP's Windows servers
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build NestJS App
+        run: npm run build
+
+      - name: Remove Development Dependencies
+        # Shrinks node_modules down to just production packages (~150MB)
+        run: npm prune --production
+
+      - name: Deploy to MonsterASP via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps # Use ftps if MonsterASP supports it, otherwise change to ftp
+          local-dir: ./
+          server-dir: /wwwroot/
+          # Exclude unnecessary files to make the upload lightning fast
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**/test/**
+            **/node_modules/**/*.md
+            **/node_modules/**/*.ts
+            src/**
+            test/**
+            .github/**
+            Dockerfile
+            .gitignore
+            README.md

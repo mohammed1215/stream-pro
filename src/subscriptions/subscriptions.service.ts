@@ -1,7 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { SubscriptionRepository } from './repositories/subscription.repository';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { NotificationType } from 'src/generated/prisma/browser';
+import { Prisma } from 'src/generated/prisma/client';
 
 @Injectable()
 export class SubscriptionsService {
@@ -10,20 +15,40 @@ export class SubscriptionsService {
     private readonly notificationService: NotificationsService,
   ) {}
   async createSubscription(channelId: string, userId: string) {
-    const subscription = await this.subscriptionRepository.createSubscription({
-      channel: { connect: { id: channelId } },
-      user: { connect: { id: userId } },
-    });
+    try {
+      const subscription = await this.subscriptionRepository.createSubscription(
+        {
+          channel: { connect: { id: channelId } },
+          user: { connect: { id: userId } },
+        },
+      );
 
-    await this.notificationService.create({
-      actorId: userId,
-      recipientId: subscription.channel.userId,
-      contextId: subscription.id,
-      message: `You have subscribed to ${subscription.channel.title}`,
-      type: NotificationType.SUBSCRIPTION,
-    });
+      await this.notificationService.create({
+        actorId: userId,
+        recipientId: subscription.channel.userId,
+        contextId: subscription.id,
+        message: `You have subscribed to ${subscription.channel.title}`,
+        type: NotificationType.SUBSCRIPTION,
+      });
 
-    return subscription;
+      return subscription;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new BadRequestException('Invalid channelId or userId provided.');
+      } else if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'You are already subscribed to this channel.',
+        );
+      } else {
+        throw error;
+      }
+    }
   }
 
   findOwnerChannelSubscriptions(
@@ -56,10 +81,7 @@ export class SubscriptionsService {
   //   return `This action updates a #${id} subscription`;
   // }
 
-  removeSubscription(subscriptionId: string, userId: string) {
-    return this.subscriptionRepository.deleteSubscription(
-      subscriptionId,
-      userId,
-    );
+  removeSubscription(channelId: string, userId: string) {
+    return this.subscriptionRepository.deleteSubscription(channelId, userId);
   }
 }

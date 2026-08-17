@@ -10,9 +10,10 @@ import { VideoProcessingService } from 'src/video-processing/video-processing.se
 import fs from 'fs';
 import { UpdateVideoDto } from './dto/update-video.dto';
 
-import { VIDEO_DETAILS_SELECT } from './repositories/video-select';
+import { VIDEO_DETAILS_OWNER_SELECT } from './repositories/video-select';
 import { Prisma } from 'src/generated/prisma/client';
 import { SortByVideo } from './dto/video-query.dto';
+import { buildPaginationMeta } from 'src/utils/pagination.util';
 
 @Injectable()
 export class VideosService {
@@ -70,16 +71,25 @@ export class VideosService {
     );
   }
 
-  getOwnerVideos(channelId: string, pageNumber: number, pageSize: number) {
-    return this.videoRepo.findAllVideosOfOwnerChannel(
-      channelId,
-      pageNumber,
-      pageSize,
-    );
+  async getOwnerVideos(
+    channelId: string,
+    pageNumber: number,
+    pageSize: number,
+  ) {
+    const { videos, totalCount } =
+      await this.videoRepo.findAllVideosOfOwnerChannel(
+        channelId,
+        pageNumber,
+        pageSize,
+      );
+
+    const meta = buildPaginationMeta(totalCount, pageNumber, pageSize);
+
+    return { videos, ...meta };
   }
 
-  async findOneVideoDetails(videoId: string) {
-    const videoData = await this.videoRepo.findOneVideoDetails(videoId);
+  async findOneVideoDetails(videoId: string, userId?: string) {
+    const videoData = await this.videoRepo.findOneVideoDetails(videoId, userId);
     if (!videoData) throw new NotFoundException();
     return videoData;
   }
@@ -156,10 +166,10 @@ export class VideosService {
       throw new BadRequestException('thumbnail file is required');
     }
     let oldVideo: Prisma.VideoGetPayload<{
-      select: typeof VIDEO_DETAILS_SELECT;
+      select: typeof VIDEO_DETAILS_OWNER_SELECT;
     }> | null = null;
     let newVideo: Prisma.VideoGetPayload<{
-      select: typeof VIDEO_DETAILS_SELECT;
+      select: typeof VIDEO_DETAILS_OWNER_SELECT;
     }> | null = null;
     try {
       const imageUrl = await this.cloudinaryService.uploadImage(thumbnailFile);
@@ -191,10 +201,10 @@ export class VideosService {
     }
 
     let oldVideo: Prisma.VideoGetPayload<{
-      select: typeof VIDEO_DETAILS_SELECT;
+      select: typeof VIDEO_DETAILS_OWNER_SELECT;
     }> | null = null;
     let newVideo: Prisma.VideoGetPayload<{
-      select: typeof VIDEO_DETAILS_SELECT;
+      select: typeof VIDEO_DETAILS_OWNER_SELECT;
     }> | null = null;
     try {
       const videoUrl = await this.cloudinaryService.uploadVideo(video);

@@ -30,10 +30,10 @@ export class SubscriptionRepository {
     });
   }
 
-  deleteSubscription(subscriptionId: string, userId: string) {
+  deleteSubscription(channelId: string, userId: string) {
     return this.prismaService.subscription.deleteMany({
       where: {
-        id: subscriptionId,
+        channelId,
         userId: userId,
       },
     });

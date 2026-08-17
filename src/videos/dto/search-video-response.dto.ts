@@ -6,9 +6,11 @@ export class SearchVideoResponseDto {
   @ApiProperty() thumbnailUrl: string;
   @ApiProperty() duration: number;
   @ApiProperty() videoUrl: string;
+  @ApiProperty() views: number;
   @ApiProperty() channelId: string;
   @ApiProperty() channelName: string;
   @ApiProperty() channelProfileImageUrl: string | null;
+  @ApiProperty() updatedAt: Date;
 
   constructor(
     videoId: string,
@@ -16,18 +18,22 @@ export class SearchVideoResponseDto {
     thumbnailUrl: string,
     duration: number,
     videoUrl: string,
+    views: number = 0,
     channelId: string,
     channelName: string,
     channelProfileImageUrl: string | null,
+    updatedAt: Date,
   ) {
     this.videoId = videoId;
     this.title = title;
     this.thumbnailUrl = thumbnailUrl;
     this.duration = duration;
     this.videoUrl = videoUrl;
+    this.views = views;
     this.channelId = channelId;
     this.channelName = channelName;
     this.channelProfileImageUrl = channelProfileImageUrl;
+    this.updatedAt = updatedAt;
   }
 }
 

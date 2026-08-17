@@ -45,6 +45,7 @@ export class CommentRepository {
       where: filter,
       skip: (validPage - 1) * validLimit,
       take: validLimit,
+      include: { user: true },
     });
   }
 

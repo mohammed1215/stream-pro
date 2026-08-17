@@ -1,33 +1,36 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class PlaylistResponseDto {
-  @ApiProperty() playlistId: string;
+export class VideoOfPlaylistResponseDto {
+  @ApiProperty() videoId: string;
   @ApiProperty() title: string;
-  @ApiProperty({ nullable: true }) description: string | null;
-  @ApiProperty() isPublic: boolean;
+  @ApiProperty() description: string;
+  @ApiProperty() thumbnailUrl: string;
+  @ApiProperty() indexOfVideo: number;
+  @ApiProperty() playlistId: string;
   @ApiProperty() createdAt: Date;
-  @ApiProperty() updatedAt: Date;
 
   constructor(
-    playlistId: string,
+    videoId: string,
     title: string,
-    description: string | null,
-    isPublic: boolean,
+    description: string,
+    thumbnailUrl: string,
+    indexOfVideo: number,
+    playlistId: string,
     createdAt: Date,
-    updatedAt: Date,
   ) {
-    this.playlistId = playlistId;
+    this.videoId = videoId;
     this.title = title;
     this.description = description;
-    this.isPublic = isPublic;
+    this.thumbnailUrl = thumbnailUrl;
+    this.indexOfVideo = indexOfVideo;
+    this.playlistId = playlistId;
     this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
   }
 }
 
-export class PaginatedPlaylistResponseDto {
-  @ApiProperty({ type: [PlaylistResponseDto] })
-  items: PlaylistResponseDto[];
+export class PaginatedVideoOfPlaylistResponseDto {
+  @ApiProperty({ type: [VideoOfPlaylistResponseDto] })
+  items: VideoOfPlaylistResponseDto[];
   @ApiProperty() totalCount: number;
   @ApiProperty() pageNumber: number;
   @ApiProperty() pageSize: number;
@@ -35,7 +38,7 @@ export class PaginatedPlaylistResponseDto {
   @ApiProperty() hasNextPage: boolean;
 
   constructor(
-    items: PlaylistResponseDto[],
+    items: VideoOfPlaylistResponseDto[],
     totalCount: number,
     pageNumber: number,
     pageSize: number,
