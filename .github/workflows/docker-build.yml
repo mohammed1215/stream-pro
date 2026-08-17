@@ -63,7 +63,6 @@ jobs:
   # JOB 2: DEPLOY TO MONSTERASP (WINDOWS)
   # ==========================================
   deploy-monsterasp:
-    # MUST be windows-latest so native packages (like bcrypt) compile for MonsterASP's Windows servers
     runs-on: windows-latest
 
     steps:
@@ -78,11 +77,14 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      # ✅ THIS IS THE MISSING STEP
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
       - name: Build NestJS App
         run: npm run build
 
       - name: Remove Development Dependencies
-        # Shrinks node_modules down to just production packages (~150MB)
         run: npm prune --production
 
       - name: Deploy to MonsterASP via FTP
@@ -91,10 +93,9 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps # Use ftps if MonsterASP supports it, otherwise change to ftp
+          protocol: ftps
           local-dir: ./
           server-dir: /wwwroot/
-          # Exclude unnecessary files to make the upload lightning fast
           exclude: |
             **/.git*
             **/.git*/**
