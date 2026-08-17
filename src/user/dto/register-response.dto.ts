@@ -1,11 +1,17 @@
 export class RegisterResponseDto {
-  public id: string;
-  public email: string;
-  public name: string;
+  accessToken: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    avatarUrl: string | null;
+  };
 
-  constructor(id: string, email: string, name: string) {
-    this.id = id;
-    this.email = email;
-    this.name = name;
+  constructor(
+    accessToken: string,
+    user: { id: string; email: string; name: string; avatarUrl: string | null },
+  ) {
+    this.accessToken = accessToken;
+    this.user = user;
   }
 }

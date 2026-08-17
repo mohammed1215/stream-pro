@@ -43,8 +43,10 @@ export class UserController {
   @ApiSuccessResponse(RegisterResponseDto)
   async register(
     @Body() createUserDto: CreateUserDto,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<SuccessResponseShape<RegisterResponseDto>> {
     const data = await this.userService.register(createUserDto);
+    res.cookie('refreshToken', data.refreshToken, { httpOnly: true });
     return new SuccessResponseShape<RegisterResponseDto>(data);
   }
 

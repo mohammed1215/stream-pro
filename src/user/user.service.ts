@@ -49,7 +49,21 @@ export class UserService {
     });
 
     //return response
-    return new RegisterResponseDto(newUser.id, newUser.email, newUser.name);
+    const { accessToken, refreshToken } = await this.generateAuthToken({
+      userId: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+    });
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        avatarUrl: newUser.avatarUrl,
+      },
+    };
   }
 
   async login(loginDto: LoginRequestDto) {
