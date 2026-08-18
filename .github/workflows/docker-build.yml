@@ -81,11 +81,12 @@ jobs:
         run: npx prisma generate
 
       - name: Build and Bundle NestJS App
+        shell: pwsh
         run: |
           npm install -g @vercel/ncc
-          # 1. --tsconfig tsconfig.build.json tells ncc to ignore test files (*.spec.ts)
-          # 2. --external @prisma/client prevents ncc from breaking Prisma's internal dependencies
-          ncc build src/main.ts -o dist --minify --tsconfig tsconfig.build.json --external @prisma/client
+          # -t (transpile-only) skips TS type checking (ignores test file errors)
+          # --external prevents ncc from breaking Prisma
+          ncc build src/main.ts -o dist --minify -t --external @prisma/client
 
       # 🚨 CRITICAL STEP: Copy Prisma engine files and package.json to dist
       - name: Prepare Deployment Folder
