@@ -84,25 +84,28 @@ jobs:
         shell: pwsh
         run: |
           npm install -g @vercel/ncc
-          # -t (transpile-only) skips TS type checking (ignores test file errors)
-          # --external prevents ncc from breaking Prisma
-          ncc build src/main.ts -o dist --minify -t --external @prisma/client
+          ncc build src/main.ts -o dist --minify -t
+          # ncc always emits dist/index.js — rename to match web.config's main.js
+          Rename-Item -Path "dist/index.js" -NewName "main.js"
 
-      # 🚨 CRITICAL STEP: Copy Prisma engine files and package.json to dist
+      - name: Debug - inspect generated Prisma client
+        shell: pwsh
+        run: Get-ChildItem -Path "src/generated/prisma" -Recurse | Select-Object FullName
+
       - name: Prepare Deployment Folder
         shell: pwsh
         run: |
-          # Create node_modules in dist to hold external packages
-          New-Item -ItemType Directory -Force -Path "dist/node_modules"
+          # Copy the generated Prisma client from its CUSTOM output path
+          Copy-Item -Path "src/generated/prisma" -Destination "dist/generated/prisma" -Recurse
 
-          # Copy Prisma schema
+          # Prisma's query engine binary is located via __dirname at runtime.
+          # ncc bundles everything into dist/main.js, so __dirname becomes "dist/".
+          # Copy the engine binary next to it too, just in case the bundled
+          # require can't resolve the relative generated/ path correctly.
+          Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse |
+            ForEach-Object { Copy-Item $_.FullName -Destination "dist/" }
+
           Copy-Item -Path "prisma" -Destination "dist/prisma" -Recurse
-
-          # Copy the generated Prisma client and the Windows database engine binaries
-          Copy-Item -Path "node_modules/.prisma" -Destination "dist/node_modules/.prisma" -Recurse
-          Copy-Item -Path "node_modules/@prisma" -Destination "dist/node_modules/@prisma" -Recurse
-
-          # Copy package.json (MonsterASP might need it to run 'node index.js')
           Copy-Item -Path "package.json" -Destination "dist/package.json"
 
       - name: Deploy to MonsterASP via FTP
