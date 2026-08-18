@@ -63,7 +63,6 @@ jobs:
   # JOB 2: DEPLOY TO MONSTERASP (WINDOWS)
   # ==========================================
   deploy-monsterasp:
-    # Using windows-latest is perfect here because Prisma will download the Windows database binaries!
     runs-on: windows-latest
 
     steps:
@@ -78,22 +77,31 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Generate Prisma Client (Downloads Windows binaries)
+      - name: Generate Prisma Client
         run: npx prisma generate
 
       - name: Build and Bundle NestJS App
         run: |
           npm install -g @vercel/ncc
-          ncc build src/main.ts -o dist --minify
+          # 1. --tsconfig tsconfig.build.json tells ncc to ignore test files (*.spec.ts)
+          # 2. --external @prisma/client prevents ncc from breaking Prisma's internal dependencies
+          ncc build src/main.ts -o dist --minify --tsconfig tsconfig.build.json --external @prisma/client
 
       # 🚨 CRITICAL STEP: Copy Prisma engine files and package.json to dist
       - name: Prepare Deployment Folder
+        shell: pwsh
         run: |
-          # Copy Prisma schema and the generated client binaries
-          Copy-Item -Path "prisma" -Destination "dist/prisma" -Recurse
-          Copy-Item -Path "node_modules/.prisma/client" -Destination "dist/node_modules/.prisma/client" -Recurse
+          # Create node_modules in dist to hold external packages
+          New-Item -ItemType Directory -Force -Path "dist/node_modules"
 
-          # Copy package.json (MonsterASP might need it to run 'node dist/index.js' or run scripts)
+          # Copy Prisma schema
+          Copy-Item -Path "prisma" -Destination "dist/prisma" -Recurse
+
+          # Copy the generated Prisma client and the Windows database engine binaries
+          Copy-Item -Path "node_modules/.prisma" -Destination "dist/node_modules/.prisma" -Recurse
+          Copy-Item -Path "node_modules/@prisma" -Destination "dist/node_modules/@prisma" -Recurse
+
+          # Copy package.json (MonsterASP might need it to run 'node index.js')
           Copy-Item -Path "package.json" -Destination "dist/package.json"
 
       - name: Deploy to MonsterASP via FTP
@@ -106,11 +114,7 @@ jobs:
 
           # 🎯 ONLY upload the bundled dist folder!
           local-dir: ./dist/
-
-          # Upload to the root of your website
           server-dir: /wwwroot/
-
-          # Since we are ONLY uploading ./dist/, we don't need a massive exclude list anymore.
           exclude: |
             **/.git*
             **/.DS_Store
