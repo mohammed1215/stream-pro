@@ -74,39 +74,44 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install Dependencies (full, for build)
+        run: npm ci
 
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Build and Bundle NestJS App
+      - name: Build NestJS App (plain tsc, no bundler)
+        run: npm run build
+        # This should run Nest's own build (nest build / tsc) producing dist/main.js
+        # via the standard NestJS CLI output — no ncc, no bundling.
+
+      - name: Install Production Dependencies
         shell: pwsh
         run: |
-          npm install -g @vercel/ncc
-          ncc build src/main.ts -o dist --minify -t
-          # ncc always emits dist/index.js — rename to match web.config's main.js
-          Rename-Item -Path "dist/index.js" -NewName "main.js"
-
-      - name: Debug - inspect generated Prisma client
-        shell: pwsh
-        run: Get-ChildItem -Path "src/generated/prisma" -Recurse | Select-Object FullName
+          # Fresh prod-only node_modules — includes @prisma/client, generated
+          # client at src/generated/prisma is copied separately below since
+          # it's outside node_modules and not reinstalled by npm.
+          npm ci --omit=dev
 
       - name: Prepare Deployment Folder
         shell: pwsh
         run: |
-          # Copy the generated Prisma client from its CUSTOM output path
+          # Copy production node_modules (includes @prisma/client + engine binaries
+          # resolved for windows since this all runs on windows-latest)
+          Copy-Item -Path "node_modules" -Destination "dist/node_modules" -Recurse
+
+          # Copy the custom-output generated Prisma client
           Copy-Item -Path "src/generated/prisma" -Destination "dist/generated/prisma" -Recurse
 
-          # Prisma's query engine binary is located via __dirname at runtime.
-          # ncc bundles everything into dist/main.js, so __dirname becomes "dist/".
-          # Copy the engine binary next to it too, just in case the bundled
-          # require can't resolve the relative generated/ path correctly.
-          Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse |
-            ForEach-Object { Copy-Item $_.FullName -Destination "dist/" }
-
+          # Copy Prisma schema (needed if you run migrations from the server, optional otherwise)
           Copy-Item -Path "prisma" -Destination "dist/prisma" -Recurse
+
+          # Copy package.json + lockfile for reference
           Copy-Item -Path "package.json" -Destination "dist/package.json"
+
+      - name: Debug - list dist contents
+        shell: pwsh
+        run: Get-ChildItem -Path "dist" -Recurse | Select-Object FullName | Select-Object -First 50
 
       - name: Deploy to MonsterASP via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -115,8 +120,6 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
-
-          # 🎯 ONLY upload the bundled dist folder!
           local-dir: ./dist/
           server-dir: /wwwroot/
           exclude: |
