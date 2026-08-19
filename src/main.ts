@@ -23,10 +23,14 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Your API Title')
-    .setDescription('The API description')
+    .setDescription(
+      'Welcome to the API documentation. \n\n' +
+        '**[Download OpenAPI JSON Specification File Route](/api/docs-json)**', // Adds the markdown link
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 

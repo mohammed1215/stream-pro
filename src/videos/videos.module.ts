@@ -15,5 +15,6 @@ import { VideoProcessingService } from 'src/video-processing/video-processing.se
     ChannelRepository,
     VideoProcessingService,
   ],
+  exports: [VideosService, VideoRepository],
 })
 export class VideosModule {}

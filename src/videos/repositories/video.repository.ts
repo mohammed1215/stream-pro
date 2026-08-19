@@ -162,6 +162,12 @@ export class VideoRepository {
     return video;
   }
 
+  async findById(videoId: string) {
+    return this.prisma.video.findUnique({
+      where: { id: videoId, isDeleted: false },
+    });
+  }
+
   async searchVideos(query: string, pageNumber: number, pageSize: number) {
     const skip = (pageNumber - 1) * pageSize;
     const items = await this.prisma.video.findMany({

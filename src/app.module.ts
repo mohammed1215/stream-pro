@@ -22,6 +22,7 @@ import { PlaylistsModule } from './playlists/playlists.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { HomeModule } from './home/home.module';
+import { WatchHistoryModule } from './watch-history/watch-history.module';
 
 export const VIDEO_STORAGE = diskStorage({
   destination: tmpdir(),
@@ -62,6 +63,7 @@ export const VIDEO_STORAGE = diskStorage({
     NotificationsModule,
     FirebaseModule,
     HomeModule,
+    WatchHistoryModule,
   ],
   controllers: [AppController],
   providers: [

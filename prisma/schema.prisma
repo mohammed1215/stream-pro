@@ -41,6 +41,7 @@ model User {
   playlists              Playlist[]
   notificationsRecipient Notification[] @relation(name: "NotificationsRecipient")
   notificationsActor     Notification[] @relation(name: "NotificationsActor")
+  watchHistories         WatchHistory[]
 }
 
 enum DeviceType {
@@ -59,10 +60,11 @@ model Channel {
   updatedAt       DateTime @default(now()) @updatedAt
   isDeleted       Boolean  @default(false)
 
-  userId        String         @unique
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videos        Video[]
-  subscriptions Subscription[]
+  userId         String         @unique
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videos         Video[]
+  subscriptions  Subscription[]
+  watchHistories WatchHistory[]
 }
 
 model Video {
@@ -85,6 +87,7 @@ model Video {
   likes          Like[]
   watchLaters    WatchLater[]
   playlistVideos PlaylistVideo[]
+  watchHistories WatchHistory[]
 }
 
 model Comment {
@@ -196,4 +199,27 @@ enum NotificationType {
   COMMENT
   PLAYLIST
   SUBSCRIPTION
+}
+
+model WatchHistory {
+  id        String @id @default(uuid())
+  userId    String
+  videoId   String
+  channelId String
+
+  watchedSeconds Int   @default(0)
+  videoDuration  Int
+  completionRate Float @default(0)
+
+  watchCount    Int      @default(1)
+  lastWatchedAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video   Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([userId, lastWatchedAt])
+  @@index([userId, channelId])
 }
