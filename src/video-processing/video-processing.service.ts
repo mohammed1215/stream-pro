@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as ffprobeInstaller from '@ffprobe-installer/ffprobe';
+import { chmod } from 'fs/promises';
 
 @Injectable()
 export class VideoProcessingService {
@@ -13,6 +14,8 @@ export class VideoProcessingService {
 
   async getVideoDuration(videoPath: string): Promise<number> {
     try {
+      await chmod(this.ffprobePath, 0o755).catch(() => {});
+
       // Use execFile and pass arguments as an array. This is much safer and handles spaces in file paths perfectly.
       const { stdout } = await this.execFilePromise(this.ffprobePath, [
         '-v',
