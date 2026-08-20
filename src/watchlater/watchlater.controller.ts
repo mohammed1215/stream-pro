@@ -3,26 +3,31 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { WatchlaterService } from './watchlater.service';
 import { CreateWatchlaterDto } from './dto/create-watchlater.dto';
-import { UpdateWatchlaterDto } from './dto/update-watchlater.dto';
 import { User } from 'src/decorators/user-decorator';
 import { JwtUserPayload } from 'src/user/user.service';
 import { AuthGuard } from 'src/user/guards/AuthGuard';
-import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { WatchLaterListDto } from './dto/responses/watch-later-item.dto';
+@UseGuards(AuthGuard)
+@ApiBearerAuth()
 @Controller('watchlaters')
 export class WatchlaterController {
   constructor(private readonly watchlaterService: WatchlaterService) {}
 
   @Post()
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiResponse({
     schema: {
       type: 'object',
@@ -52,26 +57,46 @@ export class WatchlaterController {
   }
 
   @Get()
-  findAll() {
-    return this.watchlaterService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.watchlaterService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateWatchlaterDto: UpdateWatchlaterDto,
+  @ApiOperation({ summary: "Get the current user's watch-later list" })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description: 'Last watch-later item id from the previous page',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default 20)',
+  })
+  @ApiOkResponse({ type: WatchLaterListDto })
+  async findAll(
+    @User() user: JwtUserPayload,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.watchlaterService.update(+id, updateWatchlaterDto);
+    return this.watchlaterService.findAllByUserId(
+      user.userId,
+      cursor,
+      limit ? parseInt(limit) : 20,
+    );
   }
+
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.watchlaterService.findOne(+id);
+  // }
+
+  // @Patch(':id')
+  // update(
+  //   @Param('id') id: string,
+  //   @Body() updateWatchlaterDto: UpdateWatchlaterDto,
+  // ) {
+  //   return this.watchlaterService.update(+id, updateWatchlaterDto);
+  // }
 
   @Delete(':watchLaterId')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   removeFromWatchLater(
     @User() user: JwtUserPayload,
     @Param('watchLaterId') watchLaterId: string,

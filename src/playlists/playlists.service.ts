@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import { UpdatePlaylistDto } from './dto/update-playlist.dto';
 import { PlaylistRepository } from './repositories/playlist.repository';
@@ -41,6 +45,16 @@ export class PlaylistsService {
     pageNumber = 1,
     pageSize = 10,
   ) {
+    const playlist = await this.playlistRepository.findByIdAndUserId(
+      playlistId,
+      userId,
+    );
+
+    if (!playlist)
+      throw new NotFoundException(
+        'Playlist not found or does not belong to the user',
+      );
+
     const { videos, count } =
       await this.playlistRepository.findVideosOfPlaylist(
         userId,
@@ -59,6 +73,7 @@ export class PlaylistsService {
       pageSize,
       totalPages,
       hasNextPage,
+      isPublic: playlist.isPublic,
     };
   }
 
@@ -72,6 +87,50 @@ export class PlaylistsService {
       ...playlist,
       hasVideo: playlist.videos.length > 0,
     }));
+  }
+
+  async findOnePlaylistDetails(
+    playlistId: string,
+    userId: string,
+    cursor?: string,
+    limit = 20,
+  ) {
+    const playlist = await this.playlistRepository.findOne(playlistId);
+
+    if (!playlist || playlist.isDeleted) {
+      throw new NotFoundException('Playlist not found');
+    }
+
+    if (!playlist.isPublic && playlist.userId !== userId) {
+      throw new ForbiddenException('This playlist is private');
+    }
+
+    const videos = await this.playlistRepository.findVideosPaginated(
+      playlistId,
+      cursor,
+      limit,
+    );
+    const videoCount =
+      await this.playlistRepository.countVideosInPlaylist(playlistId);
+
+    return {
+      playlistId: playlist.id,
+      title: playlist.title,
+      description: playlist.description,
+      isPublic: playlist.isPublic,
+      videoCount,
+      items: videos.map((v) => ({
+        videoId: v.videoId,
+        title: v.video.title,
+        thumbnailUrl: v.video.thumbnailUrl,
+        duration: v.video.duration,
+        views: v.video.views,
+        createdAt: v.video.createdAt,
+        channelId: v.video.channel.id,
+        channelTitle: v.video.channel.title,
+        channelImageUrl: v.video.channel.channelImageUrl,
+      })),
+    };
   }
 
   addVideoToPlaylist(userId: string, playlistId: string, videoId: string) {

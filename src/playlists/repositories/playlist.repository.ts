@@ -35,10 +35,27 @@ export class PlaylistRepository {
   }
 
   async findAllPlaylistsForUser(userId: string) {
-    const playlists = await this.prismaService.playlist.findMany({
+    return this.prismaService.playlist.findMany({
       where: { userId },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        isPublic: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { videos: true } },
+        videos: {
+          take: 1,
+          orderBy: { index: 'asc' },
+          select: {
+            video: {
+              select: { thumbnailUrl: true, id: true },
+            },
+          },
+        },
+      },
     });
-    return playlists;
   }
 
   async findVideosOfPlaylist(
@@ -52,7 +69,10 @@ export class PlaylistRepository {
       orderBy: { index: 'asc' },
       skip: (pageNumber - 1) * pageSize,
       take: pageSize,
-      include: { video: true },
+      include: {
+        video: true,
+        playlist: { select: { title: true, isPublic: true } },
+      },
     });
 
     const count = await this.prismaService.playlistVideo.count({
@@ -62,10 +82,53 @@ export class PlaylistRepository {
     return { videos, count };
   }
 
+  async findByIdAndUserId(playlistId: string, userId: string) {
+    return this.prismaService.playlist.findFirst({
+      where: { id: playlistId, userId },
+    });
+  }
+
   async findPlaylistsWithVideoBlongsToItOrNot(videoId: string, userId: string) {
     return this.prismaService.playlist.findMany({
       where: { userId },
       include: { videos: { where: { videoId }, take: 1 } },
+    });
+  }
+
+  async findOne(playlistId: string) {
+    return this.prismaService.playlist.findUnique({
+      where: { id: playlistId },
+    });
+  }
+
+  async findVideosPaginated(playlistId: string, cursor?: string, limit = 20) {
+    const videos = await this.prismaService.playlistVideo.findMany({
+      where: { playlistId },
+      ...(cursor && { cursor: { id: cursor } }),
+      include: {
+        video: {
+          select: {
+            title: true,
+            thumbnailUrl: true,
+            duration: true,
+            views: true,
+            createdAt: true,
+            channel: {
+              select: { title: true, id: true, channelImageUrl: true },
+            },
+          },
+        },
+      },
+      orderBy: { index: 'asc' },
+      skip: cursor ? 1 : 0,
+      take: limit,
+    });
+    return videos;
+  }
+
+  async countVideosInPlaylist(playlistId: string) {
+    return this.prismaService.playlistVideo.count({
+      where: { playlistId },
     });
   }
 

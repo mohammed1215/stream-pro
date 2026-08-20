@@ -34,22 +34,58 @@ export class WatchlaterRepository {
     }
   }
 
+  async findAllByUserId(userId: string, cursor?: string, limit = 20) {
+    return this.prismaService.watchLater.findMany({
+      where: { userId, video: { isDeleted: false } },
+      take: limit,
+      ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+      select: {
+        id: true,
+        video: {
+          select: {
+            id: true,
+            title: true,
+            thumbnailUrl: true,
+            duration: true,
+            views: true,
+            createdAt: true,
+            channel: {
+              select: {
+                id: true,
+                title: true,
+                channelImageUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async countWatchLaterByUserId(userId: string) {
+    return this.prismaService.watchLater.count({
+      where: { userId, video: { isDeleted: false } },
+    });
+  }
+
+  findOne(userId: string, videoId: string) {
+    return this.prismaService.watchLater.findUnique({
+      where: { userId_videoId: { userId, videoId } },
+      select: { id: true },
+    });
+  }
+
   async removeFromWatchLater(userId: string, watchLaterId: string) {
     try {
       return await this.prismaService.watchLater.delete({
         where: { id: watchLaterId, userId },
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        switch (error.code) {
-          case 'P2002':
-            throw new ConflictException(
-              'This video is already in the watchlater list',
-            );
-          case 'P2003':
-          case 'P2025':
-            throw new NotFoundException('User or video not found');
-        }
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('Watch later item not found');
       }
       throw error;
     }

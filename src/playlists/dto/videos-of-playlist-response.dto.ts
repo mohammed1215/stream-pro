@@ -8,6 +8,7 @@ export class VideoOfPlaylistResponseDto {
   @ApiProperty() indexOfVideo: number;
   @ApiProperty() playlistId: string;
   @ApiProperty() createdAt: Date;
+  @ApiProperty() duration: number;
 
   constructor(
     videoId: string,
@@ -17,6 +18,7 @@ export class VideoOfPlaylistResponseDto {
     indexOfVideo: number,
     playlistId: string,
     createdAt: Date,
+    duration: number,
   ) {
     this.videoId = videoId;
     this.title = title;
@@ -25,6 +27,7 @@ export class VideoOfPlaylistResponseDto {
     this.indexOfVideo = indexOfVideo;
     this.playlistId = playlistId;
     this.createdAt = createdAt;
+    this.duration = duration;
   }
 }
 
@@ -36,6 +39,7 @@ export class PaginatedVideoOfPlaylistResponseDto {
   @ApiProperty() pageSize: number;
   @ApiProperty() totalPages: number;
   @ApiProperty() hasNextPage: boolean;
+  @ApiProperty() isPublic: boolean;
 
   constructor(
     items: VideoOfPlaylistResponseDto[],
@@ -44,6 +48,7 @@ export class PaginatedVideoOfPlaylistResponseDto {
     pageSize: number,
     totalPages: number,
     hasNextPage: boolean,
+    isPublic: boolean,
   ) {
     this.items = items;
     this.totalCount = totalCount;
@@ -51,5 +56,6 @@ export class PaginatedVideoOfPlaylistResponseDto {
     this.pageSize = pageSize;
     this.totalPages = totalPages;
     this.hasNextPage = hasNextPage;
+    this.isPublic = isPublic;
   }
 }

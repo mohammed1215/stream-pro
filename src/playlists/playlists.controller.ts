@@ -9,6 +9,7 @@ import {
   UseGuards,
   ParseArrayPipe,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { PlaylistsService } from './playlists.service';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
@@ -16,7 +17,12 @@ import { UpdatePlaylistDto } from './dto/update-playlist.dto';
 import { AuthGuard } from 'src/user/guards/AuthGuard';
 import { User } from 'src/decorators/user-decorator';
 import { JwtUserPayload } from 'src/user/user.service';
-import { ApiBearerAuth, ApiBody, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiProperty,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { PlaylistResponseDto } from './dto/playlist-response.dto';
 import { QueryPlaylistDto } from './dto/query-playlist.dto';
 import {
@@ -24,16 +30,17 @@ import {
   VideoOfPlaylistResponseDto,
 } from './dto/videos-of-playlist-response.dto';
 import { FindPlaylistWithVideoResponseDto } from './dto/find-playlist-with-video-response.dto';
+import { PlaylistDetailsDto } from './dto/responses/playlist-details.dto';
 
 @Controller('playlists')
+@UseGuards(AuthGuard)
+@ApiBearerAuth()
 export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}
 
   // ======================================= POST ==========================================
 
   @Post()
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiResponse({
     schema: {
       type: 'object',
@@ -64,7 +71,6 @@ export class PlaylistsController {
 
   @Post(':playlistId/videos/:videoId')
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
   async addVideoToPlaylist(
     @User() user: JwtUserPayload,
     @Param('playlistId') playlistId: string,
@@ -81,7 +87,6 @@ export class PlaylistsController {
 
   @Get()
   @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiResponse({ type: [PlaylistResponseDto] })
   async findAllPlaylistsForUser(@User() user: JwtUserPayload) {
     const playlists = await this.playlistsService.findAllPlaylistsForUser(
@@ -96,14 +101,15 @@ export class PlaylistsController {
           playlist.isPublic,
           playlist.createdAt,
           playlist.updatedAt,
+          playlist._count.videos,
+          playlist.videos[0]?.video?.thumbnailUrl,
+          playlist.videos[0]?.video?.id,
         ),
     );
   }
 
   @Get('video/:videoId')
-  @UseGuards(AuthGuard)
   @ApiResponse({ type: [FindPlaylistWithVideoResponseDto] })
-  @ApiBearerAuth()
   async findPlaylistsWithVideoBlongsToItOrNot(
     @Param('videoId') videoId: string,
     @User() user: JwtUserPayload,
@@ -128,8 +134,6 @@ export class PlaylistsController {
   }
 
   @Get(':playlistId/videos')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiResponse({ type: PaginatedVideoOfPlaylistResponseDto })
   async findVideosOfPlaylist(
     @User() user: JwtUserPayload,
@@ -143,6 +147,7 @@ export class PlaylistsController {
       pageSize,
       totalPages,
       hasNextPage,
+      isPublic,
     } = await this.playlistsService.findVideosOfPlaylist(
       user.userId,
       playlistId,
@@ -160,6 +165,7 @@ export class PlaylistsController {
           playlistVideo.index,
           playlistVideo.playlistId,
           playlistVideo.createdAt,
+          playlistVideo.video.duration,
         ),
     );
 
@@ -170,14 +176,29 @@ export class PlaylistsController {
       pageSize,
       totalPages,
       hasNextPage,
+      isPublic,
+    );
+  }
+
+  @Get(':playlistId')
+  @ApiProperty({ type: PlaylistDetailsDto })
+  async findOnePlaylistDetails(
+    @Param('playlistId') playlistId: string,
+    @User() user: JwtUserPayload,
+    @Query('cursor') cursor?: string,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ) {
+    return this.playlistsService.findOnePlaylistDetails(
+      playlistId,
+      user.userId,
+      cursor,
+      limit,
     );
   }
 
   // ======================================= PATCH ==========================================
 
   @Patch(':playlistId')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   async update(
     @Param('playlistId') playlistId: string,
     @User() user: JwtUserPayload,
@@ -199,8 +220,6 @@ export class PlaylistsController {
       properties: { videoIds: { type: 'array', items: { type: 'string' } } },
     },
   })
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   async reorderVideosInPlaylist(
     @User() user: JwtUserPayload,
     @Param('playlistId') playlistId: string,
@@ -219,8 +238,6 @@ export class PlaylistsController {
   // ======================================= DELETE ==========================================
 
   @Delete(':playlistId')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   async removePlaylist(
     @Param('playlistId') playlistId: string,
     @User() user: JwtUserPayload,
@@ -230,8 +247,6 @@ export class PlaylistsController {
   }
 
   @Delete(':playlistId/videos/:videoId')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   async removeVideoFromPlaylist(
     @User() user: JwtUserPayload,
     @Param('playlistId') playlistId: string,

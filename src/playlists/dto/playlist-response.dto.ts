@@ -7,6 +7,9 @@ export class PlaylistResponseDto {
   @ApiProperty() isPublic: boolean;
   @ApiProperty() createdAt: Date;
   @ApiProperty() updatedAt: Date;
+  @ApiProperty() videoCount: number;
+  @ApiProperty({ nullable: true }) thumbnailUrl?: string | null;
+  @ApiProperty({ nullable: true }) firstVideoId?: string | null;
 
   constructor(
     playlistId: string,
@@ -15,6 +18,9 @@ export class PlaylistResponseDto {
     isPublic: boolean,
     createdAt: Date,
     updatedAt: Date,
+    videoCount: number,
+    thumbnailUrl?: string | null,
+    firstVideoId?: string | null,
   ) {
     this.playlistId = playlistId;
     this.title = title;
@@ -22,31 +28,8 @@ export class PlaylistResponseDto {
     this.isPublic = isPublic;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
-  }
-}
-
-export class PaginatedPlaylistResponseDto {
-  @ApiProperty({ type: [PlaylistResponseDto] })
-  items: PlaylistResponseDto[];
-  @ApiProperty() totalCount: number;
-  @ApiProperty() pageNumber: number;
-  @ApiProperty() pageSize: number;
-  @ApiProperty() totalPages: number;
-  @ApiProperty() hasNextPage: boolean;
-
-  constructor(
-    items: PlaylistResponseDto[],
-    totalCount: number,
-    pageNumber: number,
-    pageSize: number,
-    totalPages: number,
-    hasNextPage: boolean,
-  ) {
-    this.items = items;
-    this.totalCount = totalCount;
-    this.pageNumber = pageNumber;
-    this.pageSize = pageSize;
-    this.totalPages = totalPages;
-    this.hasNextPage = hasNextPage;
+    this.videoCount = videoCount;
+    this.thumbnailUrl = thumbnailUrl;
+    this.firstVideoId = firstVideoId;
   }
 }

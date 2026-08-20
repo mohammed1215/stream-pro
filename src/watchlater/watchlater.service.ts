@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { CreateWatchlaterDto } from './dto/create-watchlater.dto';
-import { UpdateWatchlaterDto } from './dto/update-watchlater.dto';
 import { WatchlaterRepository } from './repositories/watchlater.repository';
 
 @Injectable()
@@ -16,16 +15,20 @@ export class WatchlaterService {
     });
   }
 
-  findAll() {
-    return `This action returns all watchlater`;
+  async findAllByUserId(userId: string, cursor?: string, limit = 20) {
+    const items = await this.watchLaterRepo.findAllByUserId(
+      userId,
+      cursor,
+      limit,
+    );
+    const videoCount =
+      await this.watchLaterRepo.countWatchLaterByUserId(userId);
+    return { items, videoCount };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} watchlater`;
-  }
-
-  update(id: number, updateWatchlaterDto: UpdateWatchlaterDto) {
-    return `This action updates a #${id} watchlater`;
+  async isVideoSaved(userId: string, videoId: string) {
+    const item = await this.watchLaterRepo.findOne(userId, videoId);
+    return { isSaved: !!item, watchLaterId: item?.id ?? null };
   }
 
   removeFromWatchLater(userId: string, watchLaterId: string) {
