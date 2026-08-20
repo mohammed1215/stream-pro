@@ -41,8 +41,6 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-c
     && adduser --system --uid 1001 nestjs
 
 COPY --from=prod-deps --chown=nestjs:nodejs /app/node_modules ./node_modules
-COPY --from=build --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=build --chown=nestjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
 COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=build --chown=nestjs:nodejs /app/prisma ./prisma
 COPY --from=build --chown=nestjs:nodejs /app/package.json ./package.json
