@@ -14,11 +14,16 @@ export class FirebaseService implements OnModuleInit {
 
   constructor(private readonly config: ConfigService) {}
 
-  async onModuleInit() {
-    const path = this.config.get<string>('FIREBASE_SERVICE_ACCOUNT_PATH') ?? '';
-
-    const data = await readFile(path, 'utf8');
-    const serviceAccount: AppOptions = JSON.parse(data);
+  onModuleInit() {
+    const serviceAccountString = this.config.get<string>(
+      'FIREBASE_SERVICE_ACCOUNT',
+    );
+    if (!serviceAccountString) {
+      throw new InternalServerErrorException(
+        'FIREBASE_SERVICE_ACCOUNT environment variable is not set',
+      );
+    }
+    const serviceAccount: AppOptions = JSON.parse(serviceAccountString);
 
     this.app = initializeApp({ credential: cert(serviceAccount) });
   }
