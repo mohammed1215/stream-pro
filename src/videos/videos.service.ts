@@ -209,8 +209,13 @@ export class VideosService {
     try {
       const videoUrl = await this.cloudinaryService.uploadVideo(video);
       oldVideo = await this.videoRepo.findOneOwnerVideoDetails(videoId);
+      const duration = await this.videoProcessingService.getVideoDuration(
+        video.path,
+      );
+
       newVideo = await this.videoRepo.updateVideoDetails(videoId, channelId, {
         videoUrl,
+        duration,
       });
     } finally {
       this.removeFile(video.path);
