@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 // import { CreateLikeDto } from './dto/create-like.dto';
 // import { UpdateLikeDto } from './dto/update-like.dto';
 import { LikeRepository } from './repositories/like.repository';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType } from '..generated/prisma/enums';
+import { NotificationType } from '../generated/prisma/enums';
 
 @Injectable()
 export class LikesService {
@@ -13,6 +13,10 @@ export class LikesService {
   ) {}
   async createLike(userId: string, videoId: string) {
     const like = await this.likeRepository.createLike(userId, videoId);
+    if (!like)
+      throw new NotFoundException(
+        'Video not found or already liked by the user',
+      );
     await this.notificationService.create({
       actorId: userId,
       recipientId: like.video.channel.userId,

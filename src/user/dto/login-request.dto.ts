@@ -1,5 +1,5 @@
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
-import { DeviceType } from '../generated/prisma/enums';
+import { DeviceType } from '../../generated/prisma/enums';
 
 export class LoginRequestDto {
   @IsEmail()
