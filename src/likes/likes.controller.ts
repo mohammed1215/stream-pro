@@ -1,18 +1,34 @@
-import { Controller, Post, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Param,
+  Delete,
+  UseGuards,
+  Get,
+  Query,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { LikesService } from './likes.service';
 import { AuthGuard } from 'src/user/guards/AuthGuard';
 import { User } from 'src/decorators/user-decorator';
 import { JwtUserPayload } from 'src/user/user.service';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
+import { LikeResponseDto } from './dto/responses/like-item-response.dto';
 // import { UpdateLikeDto } from './dto/update-like.dto';
 
 @Controller('likes')
+@UseGuards(AuthGuard)
+@ApiBearerAuth()
 export class LikesController {
   constructor(private readonly likesService: LikesService) {}
 
   @Post(':videoId')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   async createLike(
     @Param('videoId') videoId: string,
     @User() user: JwtUserPayload,
@@ -24,10 +40,36 @@ export class LikesController {
     };
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.likesService.findAll();
-  // }
+  @Get()
+  @ApiOperation({
+    summary: 'Get Liked Videos',
+    description: 'Get all liked videos of the logged in user',
+  })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description: 'last liked video item id from previous page',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default 20)',
+  })
+  @ApiOkResponse({ type: LikeResponseDto })
+  findAllLikedVideos(
+    @User() user: JwtUserPayload,
+    @Query('cursor') cursor: string,
+    @Query(
+      'limit',
+      new DefaultValuePipe(20),
+      new ParseIntPipe({ optional: true }),
+    )
+    limit: number,
+  ) {
+    return this.likesService.findAllLikedVideos(user.userId, cursor, limit);
+  }
 
   // @Get(':id')
   // findOne(@Param('id') id: string) {
@@ -40,9 +82,6 @@ export class LikesController {
   // }
 
   @Delete(':videoId')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   async remove(
     @Param('videoId') videoId: string,
     @User() user: JwtUserPayload,

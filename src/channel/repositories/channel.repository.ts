@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateChannelDto } from '../dto/create-channel.dto';
+import { Prisma } from 'src/generated/prisma/client';
+import { UpdateChannelDto } from '../dto/update-channel.dto';
 
 @Injectable()
 export class ChannelRepository {
@@ -55,7 +57,7 @@ export class ChannelRepository {
         skip: (pageNumber - 1) * pageSize,
         take: pageSize,
       }),
-      this.prisma.video.count({ where: { channelId } }),
+      this.prisma.video.count({ where: { channelId, isPublished: true } }),
     ]);
 
     return { videos, totalCount };
@@ -69,23 +71,21 @@ export class ChannelRepository {
   }
 
   async findOneByIdWithCounts(channelId: string, userId?: string) {
-    const channel = await this.prisma.channel.findUnique({
-      where: { id: channelId },
-      include: {
-        _count: { select: { videos: true, subscriptions: true } },
-      },
-    });
-    if (!channel) return null;
-    const totalViews = await this.prisma.video.aggregate({
-      where: { channelId },
-      _sum: { views: true },
-    });
+    const [channel, totalViews, isSubscribed] = await Promise.all([
+      this.prisma.channel.findUnique({
+        where: { id: channelId },
+        include: { _count: { select: { videos: true, subscriptions: true } } },
+      }),
+      this.prisma.video.aggregate({
+        where: { channelId },
+        _sum: { views: true },
+      }),
+      userId
+        ? this.prisma.subscription.findFirst({ where: { channelId, userId } })
+        : Promise.resolve(null),
+    ]);
 
-    const isSubscribed = userId
-      ? await this.prisma.subscription.findFirst({
-          where: { channelId, userId },
-        })
-      : false;
+    if (!channel) return null;
 
     return {
       ...channel,
@@ -111,13 +111,16 @@ export class ChannelRepository {
     });
     return { playlists, totalCount: count };
   }
-
   async findHomeChannel(channelId: string, userId: string | undefined) {
     const videos = await this.prisma.video.findMany({
       where: { isPublished: true, channelId },
       include: {
-        watchLaters: { take: 1, where: { userId } },
-        likes: { take: 1, where: { userId } },
+        watchLaters: userId
+          ? { where: { userId }, take: 1, select: { id: true } }
+          : false,
+        likes: userId
+          ? { where: { userId }, take: 1, select: { id: true } }
+          : false,
       },
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -145,5 +148,28 @@ export class ChannelRepository {
       where: { id: channelId },
       data: { channelImageUrl },
     });
+  }
+
+  async updateChannelDetails(
+    userId: string,
+    updateChannelDto: UpdateChannelDto,
+  ) {
+    try {
+      return await this.prisma.channel.update({
+        where: { userId },
+        data: {
+          title: updateChannelDto.title,
+          description: updateChannelDto.description,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('Channel not found');
+      }
+      throw error;
+    }
   }
 }

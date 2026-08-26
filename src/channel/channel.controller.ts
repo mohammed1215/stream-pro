@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   NotFoundException,
@@ -24,6 +25,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
+  ApiOkResponse,
 } from '@nestjs/swagger';
 import {
   GetChannelResponseDto,
@@ -46,6 +48,7 @@ import {
   PaginatedChannelPlaylistsResponseDto,
 } from './dto/get-channel-playlists-response.dto';
 import { ChannelHomeResponseDto } from './dto/channel-home-response.dto';
+import { UpdateChannelDto } from './dto/update-channel.dto';
 
 @Controller()
 export class ChannelController {
@@ -80,6 +83,7 @@ export class ChannelController {
 
   @Get('channels/:channelId')
   @UseGuards(OptionalAuthGuard)
+  @ApiOkResponse({ type: GetChannelDetailsResponseDto })
   async getChannelDetails(
     @Param('channelId') channelId: string,
     @User() user: JwtUserPayload | undefined,
@@ -101,6 +105,7 @@ export class ChannelController {
       isSubscribed: channel.isSubscribed,
       createdAt: channel.createdAt,
       updatedAt: channel.updatedAt,
+      isOwner: channel.userId === user?.userId,
     });
   }
 
@@ -265,5 +270,14 @@ export class ChannelController {
     );
 
     return new SuccessResponseShape({ channelImageUrl: data.channelImageUrl });
+  }
+
+  @Patch('owner/channels')
+  @UseGuards(AuthGuard)
+  async updateChannel(
+    @User() user: JwtUserPayload,
+    @Body() updateChannelDto: UpdateChannelDto,
+  ) {
+    return this.channelService.updateChannel(user.userId, updateChannelDto);
   }
 }

@@ -31,7 +31,15 @@ export class WatchlaterService {
     return { isSaved: !!item, watchLaterId: item?.id ?? null };
   }
 
-  removeFromWatchLater(userId: string, watchLaterId: string) {
-    return this.watchLaterRepo.removeFromWatchLater(userId, watchLaterId);
+  removeFromWatchLater(userId: string, videoId: string) {
+    return this.watchLaterRepo.removeFromWatchLater(userId, videoId);
+  }
+  async checkWatchLaterStatus(userId: string, videoId: string) {
+    return {
+      isInWatchLater: await this.watchLaterRepo.checkWatchLaterStatus(
+        userId,
+        videoId,
+      ),
+    };
   }
 }

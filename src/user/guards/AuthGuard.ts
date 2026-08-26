@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   CanActivate,
   ExecutionContext,
   Injectable,
@@ -38,9 +39,11 @@ export class AuthGuard implements CanActivate {
       throw new NotFoundException('token not found');
     }
 
-    console.log('Bearer token:', bearerToken);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [_, token] = bearerToken.split(' ');
+    const [schema, token] = bearerToken.split(' ');
+    if (schema !== 'Bearer') {
+      throw new BadRequestException('Token Not Found');
+    }
     const payload = await this.jwtService.verifyAsync<JwtUserPayload>(token);
     return payload;
   }

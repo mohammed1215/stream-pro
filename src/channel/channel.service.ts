@@ -3,6 +3,7 @@ import { ChannelRepository } from './repositories/channel.repository';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PaginatedChannelQueryDto } from './dto/paginated-channel-videos-query.dto';
 import { buildPaginationMeta } from 'src/utils/pagination.util';
+import { UpdateChannelDto } from './dto/update-channel.dto';
 
 @Injectable()
 export class ChannelService {
@@ -95,5 +96,23 @@ export class ChannelService {
       secureUrl,
     );
     return updatedChannel;
+  }
+
+  async updateChannel(userId: string, updateChannelDto: UpdateChannelDto) {
+    const data = await this.channelRepo.updateChannelDetails(
+      userId,
+      updateChannelDto,
+    );
+    return {
+      success: true,
+      data: {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        thumbnailUrl: data.thumbnailUrl,
+        channelImageUrl: data.channelImageUrl,
+        updatedAt: data.updatedAt,
+      },
+    };
   }
 }

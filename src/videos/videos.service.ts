@@ -10,10 +10,18 @@ import { VideoProcessingService } from 'src/video-processing/video-processing.se
 import fs from 'fs';
 import { UpdateVideoDto } from './dto/update-video.dto';
 
-import { VIDEO_DETAILS_OWNER_SELECT } from './repositories/video-select';
+import { videoDetailsOwnerSelectFor } from './repositories/video-select';
 import { Prisma } from 'src/generated/prisma/client';
 import { SortByVideo } from './dto/video-query.dto';
 import { buildPaginationMeta } from 'src/utils/pagination.util';
+import { VideoSortByEnum, VideoStatusEnum } from './enum/enums';
+
+// Single source of truth for the "owner details, enriched with this
+// user's like/subscription state" return type, derived directly from
+// the select factory so it can never drift out of sync with it.
+type VideoDetailsOwner = Prisma.VideoGetPayload<{
+  select: ReturnType<typeof videoDetailsOwnerSelectFor>;
+}>;
 
 @Injectable()
 export class VideosService {
@@ -22,6 +30,7 @@ export class VideosService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly videoProcessingService: VideoProcessingService,
   ) {}
+
   async create(
     channelId: string,
     createVideoDto: CreateVideoDto,
@@ -32,12 +41,11 @@ export class VideosService {
       throw new BadRequestException('video and thumbnail files are required');
     }
     try {
-      // Find duration of video
-      const duration = await this.videoProcessingService.getVideoDuration(
-        videoFile.path,
-      );
+      const duration =
+        await this.videoProcessingService.getVideoDurationUsingFilePath(
+          videoFile.path,
+        );
 
-      // upload video to cloudinary
       const secureVideoUrl =
         await this.cloudinaryService.uploadVideo(videoFile);
       const secureThumbnailUrl =
@@ -75,22 +83,32 @@ export class VideosService {
     channelId: string,
     pageNumber: number,
     pageSize: number,
+    status: VideoStatusEnum = VideoStatusEnum.ALL,
+    sortBy: VideoSortByEnum = VideoSortByEnum.NEWEST,
   ) {
-    const { videos, totalCount } =
-      await this.videoRepo.findAllVideosOfOwnerChannel(
-        channelId,
-        pageNumber,
-        pageSize,
-      );
+    const videos = await this.videoRepo.findAllVideosOfOwnerChannel(
+      channelId,
+      pageNumber,
+      pageSize,
+      status,
+      sortBy,
+    );
+
+    const totalCount = await this.videoRepo.countVideosOfChannel(true);
 
     const meta = buildPaginationMeta(totalCount, pageNumber, pageSize);
 
     return { videos, ...meta };
   }
 
-  async findOneVideoDetails(videoId: string, userId?: string) {
-    const videoData = await this.videoRepo.findOneVideoDetails(videoId, userId);
+  async findOneVideoDetails(videoId: string, userId?: string, owner = false) {
+    const videoData =
+      owner && userId
+        ? await this.videoRepo.findOneOwnerVideoDetails(videoId, userId)
+        : await this.videoRepo.findOneVideoDetails(videoId, userId);
+
     if (!videoData) throw new NotFoundException();
+
     return videoData;
   }
 
@@ -139,15 +157,18 @@ export class VideosService {
   }
 
   // =============================== Update Video Details ==============================
+
   async updateVideoDetails(
     videoId: string,
     channelId: string,
     updateVideoDto: UpdateVideoDto,
-  ) {
+    userId: string,
+  ): Promise<VideoDetailsOwner> {
     const video = await this.videoRepo.updateVideoDetails(
       videoId,
       channelId,
       updateVideoDto,
+      videoDetailsOwnerSelectFor(userId),
     );
 
     if (!video) {
@@ -161,33 +182,55 @@ export class VideosService {
     videoId: string,
     channelId: string,
     thumbnailFile: Express.Multer.File,
-  ) {
+    userId: string,
+  ): Promise<VideoDetailsOwner> {
     if (!thumbnailFile) {
       throw new BadRequestException('thumbnail file is required');
     }
-    let oldVideo: Prisma.VideoGetPayload<{
-      select: typeof VIDEO_DETAILS_OWNER_SELECT;
-    }> | null = null;
-    let newVideo: Prisma.VideoGetPayload<{
-      select: typeof VIDEO_DETAILS_OWNER_SELECT;
-    }> | null = null;
+
     try {
+      // Verify ownership BEFORE touching Cloudinary
+      const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
+        videoId,
+        userId,
+      );
+      if (!oldVideo) {
+        throw new NotFoundException('video not found or not owned by channel');
+      }
+
       const imageUrl = await this.cloudinaryService.uploadImage(thumbnailFile);
-      oldVideo = await this.videoRepo.findOneOwnerVideoDetails(videoId);
-      newVideo = await this.videoRepo.updateVideoDetails(videoId, channelId, {
-        thumbnailUrl: imageUrl,
-      });
-    } finally {
-      this.removeFile(thumbnailFile.path);
+
+      let newVideo: VideoDetailsOwner | null;
+      try {
+        newVideo = await this.videoRepo.updateVideoDetails(
+          videoId,
+          channelId,
+          { thumbnailUrl: imageUrl },
+          videoDetailsOwnerSelectFor(userId),
+        );
+      } catch (err) {
+        // Roll back the orphaned upload if the DB write fails
+        await this.cloudinaryService.removeImage(imageUrl);
+        throw err;
+      }
+
+      if (!newVideo) {
+        // Row disappeared between the ownership check and the update
+        // (e.g. deleted concurrently) - clean up and report not found.
+        await this.cloudinaryService.removeImage(imageUrl);
+        throw new NotFoundException('video not found or not owned by channel');
+      }
+
       if (
-        oldVideo &&
         oldVideo.thumbnailUrl &&
-        newVideo &&
-        newVideo.thumbnailUrl &&
         oldVideo.thumbnailUrl !== newVideo.thumbnailUrl
       ) {
         this.cloudinaryService.removeImage(oldVideo.thumbnailUrl);
       }
+
+      return newVideo;
+    } finally {
+      this.removeFile(thumbnailFile.path);
     }
   }
 
@@ -195,39 +238,55 @@ export class VideosService {
     videoId: string,
     channelId: string,
     video: Express.Multer.File,
-  ) {
+    userId: string,
+  ): Promise<VideoDetailsOwner> {
     if (!video) {
-      throw new BadRequestException('video file is required');
+      throw new BadRequestException('thumbnail file is required');
     }
 
-    let oldVideo: Prisma.VideoGetPayload<{
-      select: typeof VIDEO_DETAILS_OWNER_SELECT;
-    }> | null = null;
-    let newVideo: Prisma.VideoGetPayload<{
-      select: typeof VIDEO_DETAILS_OWNER_SELECT;
-    }> | null = null;
     try {
-      const videoUrl = await this.cloudinaryService.uploadVideo(video);
-      oldVideo = await this.videoRepo.findOneOwnerVideoDetails(videoId);
-      const duration = await this.videoProcessingService.getVideoDuration(
-        video.path,
+      // Verify ownership BEFORE touching Cloudinary
+      const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
+        videoId,
+        userId,
       );
+      if (!oldVideo) {
+        throw new NotFoundException('video not found or not owned by channel');
+      }
 
-      newVideo = await this.videoRepo.updateVideoDetails(videoId, channelId, {
-        videoUrl,
-        duration,
-      });
+      const videoUrl = await this.cloudinaryService.uploadVideo(video);
+
+      let newVideo: VideoDetailsOwner | null;
+      try {
+        newVideo = await this.videoRepo.updateVideoDetails(
+          videoId,
+          channelId,
+          { videoUrl },
+          videoDetailsOwnerSelectFor(userId),
+        );
+      } catch (err) {
+        // Roll back the orphaned upload if the DB write fails
+        await this.cloudinaryService.removeVideo(videoUrl);
+        throw err;
+      }
+
+      if (!newVideo) {
+        // Row disappeared between the ownership check and the update
+        // (e.g. deleted concurrently) - clean up and report not found.
+        await this.cloudinaryService.removeVideo(videoUrl);
+        throw new NotFoundException('video not found or not owned by channel');
+      }
+
+      if (
+        oldVideo.thumbnailUrl &&
+        oldVideo.thumbnailUrl !== newVideo.thumbnailUrl
+      ) {
+        this.cloudinaryService.removeVideo(oldVideo.thumbnailUrl);
+      }
+
+      return newVideo;
     } finally {
       this.removeFile(video.path);
-      if (
-        oldVideo &&
-        oldVideo.videoUrl &&
-        newVideo &&
-        newVideo.videoUrl &&
-        oldVideo.videoUrl !== newVideo.videoUrl
-      ) {
-        this.cloudinaryService.removeVideo(oldVideo.videoUrl);
-      }
     }
   }
 }

@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateVideoDto } from '../dto/create-video.dto';
 import {
-  VIDEO_DETAILS_OWNER_SELECT,
   VIDEO_DETAILS_SELECT,
   VIDEO_LIST_OWNER_SELECT,
   VIDEO_LIST_SELECT,
@@ -10,6 +9,7 @@ import {
 import { Prisma } from 'src/generated/prisma/client';
 import { SortByVideo } from '../dto/video-query.dto';
 import { VideoOrderByWithAggregationInput } from 'src/generated/prisma/models';
+import { VideoSortByEnum, VideoStatusEnum } from '../enum/enums';
 
 @Injectable()
 export class VideoRepository {
@@ -53,7 +53,6 @@ export class VideoRepository {
     pageSize: number,
     sortBy: SortByVideo,
   ) {
-    // ordering object
     const orderBy = this.getVideoOrderByObject(sortBy);
     const videos = await this.prisma.video.findMany({
       where: { channelId, isPublished: true, isDeleted: false },
@@ -70,20 +69,39 @@ export class VideoRepository {
     channelId: string,
     pageNumber: number,
     pageSize: number,
+    status: VideoStatusEnum = VideoStatusEnum.ALL,
+    sortBy: VideoSortByEnum = VideoSortByEnum.NEWEST,
   ) {
+    const where: Prisma.VideoWhereInput = {
+      channelId,
+      isDeleted: false,
+      ...(status === VideoStatusEnum.PUBLISHED
+        ? { isPublished: true }
+        : status === VideoStatusEnum.UNPUBLISHED
+          ? { isPublished: false }
+          : {}),
+    };
+
     const videos = await this.prisma.video.findMany({
-      where: { channelId, isDeleted: false },
-      orderBy: { updatedAt: 'asc' },
+      where,
+      orderBy:
+        sortBy === VideoSortByEnum.MOST_VIEWED
+          ? { views: 'desc' }
+          : sortBy === VideoSortByEnum.OLDEST
+            ? { createdAt: 'asc' }
+            : { createdAt: 'desc' },
       take: pageSize,
       skip: (pageNumber - 1) * pageSize,
       select: VIDEO_LIST_OWNER_SELECT,
     });
 
-    const totalCount = await this.prisma.video.count({
-      where: { channelId, isDeleted: false },
-    });
+    return videos;
+  }
 
-    return { videos, totalCount };
+  async countVideosOfChannel(owner: boolean) {
+    return this.prisma.video.count({
+      where: { isDeleted: false, isPublished: !owner },
+    });
   }
 
   async findOneVideoDetails(videoId: string, userId?: string) {
@@ -153,13 +171,62 @@ export class VideoRepository {
     };
   }
 
-  async findOneOwnerVideoDetails(videoId: string) {
+  async findOneOwnerVideoDetails(videoId: string, userId: string) {
     const video = await this.prisma.video.findUnique({
       where: { id: videoId, isDeleted: false },
-      select: VIDEO_DETAILS_OWNER_SELECT,
+      select: {
+        id: true,
+        description: true,
+        title: true,
+        views: true,
+        duration: true,
+        updatedAt: true,
+        videoUrl: true,
+        thumbnailUrl: true,
+        isPublished: true,
+        createdAt: true,
+        likes: { where: { userId }, select: { id: true }, take: 1 },
+        channel: {
+          select: {
+            id: true,
+            title: true,
+            channelImageUrl: true,
+            description: true,
+            thumbnailUrl: true,
+            _count: true,
+            subscriptions: { where: { userId }, select: { id: true }, take: 1 },
+          },
+        },
+        _count: true,
+      },
     });
 
-    return video;
+    if (!video) return null;
+
+    return {
+      ...video,
+      channel: {
+        ...video.channel,
+        isSubscribed: video.channel.subscriptions.length > 0,
+      },
+      isLikedByUser: video.likes.length > 0,
+    };
+  }
+
+  async checkUserLikedVideo(userId: string, videoId: string) {
+    return (await this.prisma.like.findUnique({
+      where: { userId_videoId: { userId, videoId } },
+    }))
+      ? true
+      : false;
+  }
+
+  async checkUserSubscribedToChannel(userId: string, channelId: string) {
+    return (await this.prisma.subscription.findUnique({
+      where: { userId_channelId: { userId, channelId } },
+    }))
+      ? true
+      : false;
   }
 
   async findById(videoId: string) {
@@ -199,14 +266,15 @@ export class VideoRepository {
     return video;
   }
 
-  async publishAndUnPublishVideo(videoId: string, channelId: string) {
-    const video = await this.prisma.$executeRaw`
+  async publishAndUnPublishVideo(
+    videoId: string,
+    channelId: string,
+  ): Promise<number> {
+    return this.prisma.$executeRaw`
       UPDATE "Video"
       SET "isPublished" = NOT "isPublished"
       WHERE "id" = ${videoId} AND "channelId" = ${channelId};
     `;
-
-    return video;
   }
 
   async removeVideo(videoId: string, channelId: string) {
@@ -218,20 +286,35 @@ export class VideoRepository {
     return video;
   }
 
-  async updateVideoDetails(
+  /**
+   * Generic, reusable update. `select` is passed in by the caller so each
+   * call site gets back exactly the shape it needs (and the correct type),
+   * instead of this method hardcoding one fixed select for every caller.
+   *
+   * Returns null (instead of throwing) when the row doesn't exist or isn't
+   * owned by channelId, so callers can turn that into a clean NotFoundException.
+   */
+  async updateVideoDetails<S extends Prisma.VideoSelect>(
     videoId: string,
     channelId: string,
-    updateVideoDto: Prisma.VideoUpdateInput,
-  ) {
-    const video = await this.prisma.video.update({
-      where: { id: videoId, channelId, isDeleted: false },
-      data: {
-        ...updateVideoDto,
-      },
-      select: VIDEO_DETAILS_SELECT,
-    });
-
-    return video;
+    data: Prisma.VideoUpdateInput,
+    select: S,
+  ): Promise<Prisma.VideoGetPayload<{ select: S }> | null> {
+    try {
+      return await this.prisma.video.update({
+        where: { id: videoId, channelId, isDeleted: false },
+        data,
+        select,
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2025'
+      ) {
+        return null;
+      }
+      throw err;
+    }
   }
 
   getVideoOrderByObject(sortBy: SortByVideo): VideoOrderByWithAggregationInput {

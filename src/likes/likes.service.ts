@@ -24,9 +24,16 @@ export class LikesService {
     return like;
   }
 
-  // findAll() {
-  //   return `This action returns all likes`;
-  // }
+  async findAllLikedVideos(userId: string, cursor?: string, limit = 20) {
+    const items = await this.likeRepository.findAllLikedVideos(
+      userId,
+      cursor,
+      limit,
+    );
+
+    const videoCount = await this.likeRepository.countLikedVideos(userId);
+    return { items, videoCount };
+  }
 
   // findOne(id: number) {
   //   return `This action returns a #${id} like`;

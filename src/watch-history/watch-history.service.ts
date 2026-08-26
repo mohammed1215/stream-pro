@@ -83,8 +83,8 @@ export class WatchHistoryService {
     const order = [
       'Today',
       'Yesterday',
-      'Last 7 days',
-      'Last 30 days',
+      'Last 7 Days',
+      'Last 30 Days',
       'Older',
     ];
 

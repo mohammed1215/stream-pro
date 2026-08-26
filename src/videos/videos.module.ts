@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { VideosService } from './videos.service';
-import { VideosController } from './videos.controller';
 import { VideoRepository } from './repositories/video.repository';
 import { ChannelService } from 'src/channel/channel.service';
 import { ChannelRepository } from 'src/channel/repositories/channel.repository';
 import { VideoProcessingService } from 'src/video-processing/video-processing.service';
+import { VideosPublicController } from './public/videos-public.controller';
+import { VideosOwnerController } from './owner/videos-owner.controller';
 
 @Module({
-  controllers: [VideosController],
+  controllers: [VideosPublicController, VideosOwnerController],
   providers: [
     VideosService,
     VideoRepository,

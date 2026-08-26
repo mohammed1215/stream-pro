@@ -18,7 +18,7 @@ export const VIDEO_DETAILS_SELECT_WITH_SUBSCRIPTIONS_OF_CHANNEL = {
       thumbnailUrl: true,
       _count: true,
       subscriptions: {
-        where: {},
+        select: { id: true }, // avoid leaking full subscription rows
       },
     },
   },
@@ -45,8 +45,9 @@ export const VIDEO_DETAILS_SELECT = {
       _count: true,
     },
   },
+  likes: true,
   _count: true,
-};
+} satisfies Prisma.VideoSelect;
 
 export const VIDEO_DETAILS_OWNER_SELECT = {
   id: true,
@@ -57,18 +58,35 @@ export const VIDEO_DETAILS_OWNER_SELECT = {
   updatedAt: true,
   videoUrl: true,
   thumbnailUrl: true,
-  channel: {
-    select: {
-      id: true,
-      title: true,
-      channelImageUrl: true,
-      description: true,
-      thumbnailUrl: true,
-      _count: true,
-    },
-  },
+  createdAt: true,
   _count: true,
 } satisfies Prisma.VideoSelect;
+
+export function videoDetailsOwnerSelectFor(userId: string) {
+  return {
+    ...VIDEO_DETAILS_OWNER_SELECT,
+    likes: {
+      where: { userId },
+      select: { id: true },
+      take: 1,
+    },
+    channel: {
+      select: {
+        id: true,
+        title: true,
+        channelImageUrl: true,
+        description: true,
+        thumbnailUrl: true,
+        _count: true,
+        subscriptions: {
+          where: { userId },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    },
+  } satisfies Prisma.VideoSelect;
+}
 
 export const VIDEO_LIST_SELECT = {
   id: true,

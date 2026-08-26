@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { VideoResponseDto } from './video-response.dto';
 
 export class VideoDetailsResponseDto extends VideoResponseDto {
-  @ApiProperty() description: string;
+  @ApiProperty({ nullable: true }) description: string | null;
   @ApiProperty() commentsCount: number;
   @ApiProperty() likesCount: number;
   @ApiProperty() channelSubscribersCount: number;
@@ -13,9 +13,9 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
   constructor(
     id: string,
     title: string,
-    description: string,
+    description: string | null,
     videoUrl: string,
-    thumbnailUrl: string,
+    thumbnailUrl: string | null,
     channelId: string,
     channelTitle: string,
     channelImageUrl: string | null,

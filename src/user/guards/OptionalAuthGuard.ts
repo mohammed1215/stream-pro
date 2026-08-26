@@ -41,7 +41,6 @@ export class OptionalAuthGuard implements CanActivate {
       throw new NotFoundException('token not found');
     }
 
-    console.log('Bearer token:', bearerToken);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, token] = bearerToken.split(' ');
     const payload = await this.jwtService.verifyAsync<JwtUserPayload>(token);

@@ -15,6 +15,7 @@ import { JwtUserPayload } from 'src/user/user.service';
 import { AuthGuard } from 'src/user/guards/AuthGuard';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
@@ -40,6 +41,9 @@ export class WatchlaterController {
         videoId: { type: 'string' },
       },
     },
+  })
+  @ApiBody({
+    schema: { type: 'object', properties: { videoId: { type: 'string' } } },
   })
   async addToWatchLater(
     @User() user: JwtUserPayload,
@@ -83,6 +87,14 @@ export class WatchlaterController {
     );
   }
 
+  @Get(':videoId/status')
+  checkWatchLaterStatus(
+    @Param('videoId') videoId: string,
+    @User() user: JwtUserPayload,
+  ) {
+    return this.watchlaterService.checkWatchLaterStatus(user.userId, videoId);
+  }
+
   // @Get(':id')
   // findOne(@Param('id') id: string) {
   //   return this.watchlaterService.findOne(+id);
@@ -96,14 +108,11 @@ export class WatchlaterController {
   //   return this.watchlaterService.update(+id, updateWatchlaterDto);
   // }
 
-  @Delete(':watchLaterId')
+  @Delete(':videoId')
   removeFromWatchLater(
     @User() user: JwtUserPayload,
-    @Param('watchLaterId') watchLaterId: string,
+    @Param('videoId') videoId: string,
   ) {
-    return this.watchlaterService.removeFromWatchLater(
-      user.userId,
-      watchLaterId,
-    );
+    return this.watchlaterService.removeFromWatchLater(user.userId, videoId);
   }
 }

@@ -1,29 +1,20 @@
-export class GetChannelDetailsResponseDto {
-  channelId: string;
-  title: string;
-  description: string | null;
-  thumbnailUrl: string | null;
-  channelImageUrl: string | null;
-  videosCount: number;
-  subscriptionsCount: number;
-  totalViews: number;
-  isSubscribed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+import { ApiProperty } from '@nestjs/swagger';
 
-  constructor(channel: {
-    channelId: string;
-    title: string;
-    description: string | null;
-    thumbnailUrl: string | null;
-    channelImageUrl: string | null;
-    videosCount: number;
-    subscriptionsCount: number;
-    totalViews: number;
-    createdAt: Date;
-    updatedAt: Date;
-    isSubscribed: boolean;
-  }) {
+export class GetChannelDetailsResponseDto {
+  @ApiProperty() channelId: string;
+  @ApiProperty() title: string;
+  @ApiProperty({ nullable: true }) description: string | null;
+  @ApiProperty({ nullable: true }) thumbnailUrl: string | null;
+  @ApiProperty({ nullable: true }) channelImageUrl: string | null;
+  @ApiProperty() videosCount: number;
+  @ApiProperty() subscriptionsCount: number;
+  @ApiProperty() totalViews: number;
+  @ApiProperty() isSubscribed: boolean;
+  @ApiProperty() isOwner: boolean;
+  @ApiProperty() createdAt: Date;
+  @ApiProperty() updatedAt: Date;
+
+  constructor(channel: GetChannelDetailsResponseDto) {
     this.channelId = channel.channelId;
     this.title = channel.title;
     this.description = channel.description;
@@ -35,5 +26,6 @@ export class GetChannelDetailsResponseDto {
     this.isSubscribed = channel.isSubscribed;
     this.createdAt = channel.createdAt;
     this.updatedAt = channel.updatedAt;
+    this.isOwner = channel.isOwner;
   }
 }

@@ -75,10 +75,10 @@ export class WatchlaterRepository {
     });
   }
 
-  async removeFromWatchLater(userId: string, watchLaterId: string) {
+  async removeFromWatchLater(userId: string, videoId: string) {
     try {
       return await this.prismaService.watchLater.delete({
-        where: { id: watchLaterId, userId },
+        where: { userId_videoId: { videoId, userId } },
       });
     } catch (error) {
       if (
@@ -89,5 +89,13 @@ export class WatchlaterRepository {
       }
       throw error;
     }
+  }
+
+  async checkWatchLaterStatus(userId: string, videoId: string) {
+    const record = await this.prismaService.watchLater.findUnique({
+      where: { userId_videoId: { userId, videoId } },
+      select: { id: true },
+    });
+    return !!record;
   }
 }
