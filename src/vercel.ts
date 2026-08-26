@@ -56,20 +56,9 @@ async function createNestApp() {
   return app;
 }
 
-// Serverless entry point — Vercel calls this on every request
 export default async function handler(req: Request, res: Response) {
   if (!cachedApp) {
     cachedApp = await createNestApp();
   }
   expressApp(req, res);
-}
-
-// Local dev entry point — `npm run start:dev` still works normally
-if (process.env.VERCEL !== '1') {
-  createNestApp().then((app) => {
-    const port = Number(process.env.PORT ?? 3000);
-    app.listen(port).then(() => {
-      console.log(`Application running on port ${port}`);
-    });
-  });
 }
