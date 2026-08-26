@@ -1,9 +1,16 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { parseFile, parseBuffer } from 'music-metadata';
+import type {
+  parseFile as ParseFile,
+  parseBuffer as ParseBuffer,
+} from 'music-metadata';
+
 @Injectable()
 export class VideoProcessingService {
   async getVideoDurationUsingFilePath(videoPath: string): Promise<number> {
     try {
+      const { parseFile } = (await import('music-metadata')) as {
+        parseFile: typeof ParseFile;
+      };
       const metadata = await parseFile(videoPath);
       const duration = metadata.format.duration;
 
@@ -25,6 +32,9 @@ export class VideoProcessingService {
     video: Express.Multer.File,
   ): Promise<number> {
     try {
+      const { parseBuffer } = (await import('music-metadata')) as {
+        parseBuffer: typeof ParseBuffer;
+      };
       const metadata = await parseBuffer(video.buffer, video.mimetype);
       const duration = metadata.format.duration;
 
