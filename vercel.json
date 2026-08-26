@@ -5,7 +5,10 @@
       "src": "src/vercel.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["dist/**"]
+        "includeFiles": [
+          "dist/**",
+          "node_modules/@ffprobe-installer/linux-x64/**"
+        ]
       }
     }
   ],
