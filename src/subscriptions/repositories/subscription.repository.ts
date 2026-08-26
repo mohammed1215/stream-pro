@@ -38,4 +38,31 @@ export class SubscriptionRepository {
       },
     });
   }
+
+  async findUserSubscriptions(
+    userId: string,
+    cursor: string | undefined,
+    take: number,
+  ) {
+    return this.prismaService.subscription.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        createdAt: true,
+        channel: {
+          select: {
+            id: true,
+            title: true,
+            thumbnailUrl: true,
+            description: true,
+            _count: { select: { subscriptions: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      cursor: cursor ? { id: cursor } : undefined,
+      take,
+      skip: cursor ? 1 : 0,
+    });
+  }
 }

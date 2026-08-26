@@ -14,7 +14,13 @@ import { SubscriptionsService } from './subscriptions.service';
 import { AuthGuard } from '../user/guards/AuthGuard';
 import { User } from '../decorators/user-decorator';
 import { JwtUserPayload } from '../user/user.service';
-import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { ChannelPreloadInterceptor } from '../interceptors/channel-preload.interceptor';
 import { type ChannelRequestData } from '../types/channel.types';
 import { Channel } from '../decorators/channel-decorator';
@@ -22,6 +28,7 @@ import {
   PaginatedSubscriptionResponseDto,
   SubscriptionResponseDto,
 } from './dto/subscription-response.dto';
+import { PaginatedSubscriptionsResponseDto } from './dto/response/subscriptions-response.dto';
 
 @Controller()
 export class SubscriptionsController {
@@ -121,5 +128,46 @@ export class SubscriptionsController {
   ) {
     await this.subscriptionsService.removeSubscription(channelId, user.userId);
     return { message: 'Subscription removed successfully' };
+  }
+
+  @Get('/subscriptions')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get the authenticated user's channel subscriptions",
+  })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description:
+      'ID of the last subscription from the previous page, for cursor-based pagination',
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    description: 'Number of subscriptions to return per page',
+    example: 10,
+  })
+  @ApiOkResponse({
+    description: "Paginated list of the user's channel subscriptions",
+    type: PaginatedSubscriptionsResponseDto,
+  })
+  async findAllSubscriptions(
+    @User() user: JwtUserPayload,
+    @Query('cursor') cursor?: string,
+    @Query(
+      'pageSize',
+      new DefaultValuePipe(10),
+      new ParseIntPipe({ optional: true }),
+    )
+    pageSize: number = 10,
+  ) {
+    return this.subscriptionsService.findAllSubscriptions(
+      user.userId,
+      cursor,
+      pageSize,
+    );
   }
 }

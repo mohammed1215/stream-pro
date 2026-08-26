@@ -84,4 +84,37 @@ export class SubscriptionsService {
   removeSubscription(channelId: string, userId: string) {
     return this.subscriptionRepository.deleteSubscription(channelId, userId);
   }
+
+  async findAllSubscriptions(
+    userId: string,
+    cursor?: string,
+    pageSize: number = 10,
+  ) {
+    const items = await this.subscriptionRepository.findUserSubscriptions(
+      userId,
+      cursor,
+      pageSize + 1,
+    );
+
+    const hasMore = items.length > pageSize;
+    const sliced = hasMore ? items.slice(0, pageSize) : items;
+
+    const subscriptions = sliced.map((item) => ({
+      id: item.id,
+      createdAt: item.createdAt,
+      channel: {
+        id: item.channel.id,
+        title: item.channel.title,
+        thumbnailUrl: item.channel.thumbnailUrl,
+        description: item.channel.description,
+        subscriberCount: item.channel._count.subscriptions,
+      },
+    }));
+
+    const nextCursor = hasMore
+      ? subscriptions[subscriptions.length - 1].id
+      : null;
+
+    return { subscriptions, hasMore, nextCursor };
+  }
 }
