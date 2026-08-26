@@ -43,7 +43,6 @@
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
     "firebase-admin": "^14.2.0",
-    "fluent-ffprobe": "^1.5.3",
     "get-video-duration": "^5.0.0",
     "google-auth-library": "^11.0.0",
     "multer": "^2.2.0",

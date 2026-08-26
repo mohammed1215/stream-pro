@@ -1,13 +1,8 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { chmod } from 'fs/promises';
 import { getVideoDurationInSeconds } from 'get-video-duration';
 
 @Injectable()
 export class VideoProcessingService {
-  private execFilePromise = promisify(execFile);
-
   constructor() {}
 
   async getVideoDurationUsingFilePath(videoPath: string) {
