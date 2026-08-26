@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { Channel } from 'src/generated/prisma/client';
+import { Channel } from '../generated/prisma/client';
 
 export type ChannelAuthRequest = Request & {
   channel: Pick<

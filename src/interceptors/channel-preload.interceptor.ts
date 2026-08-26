@@ -6,8 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { ChannelService } from 'src/channel/channel.service';
-import { UserAuthRequest } from 'src/types/auth-response.types';
+import { ChannelService } from '../channel/channel.service';
+import { UserAuthRequest } from '../types/auth-response.types';
 
 @Injectable()
 export class ChannelPreloadInterceptor implements NestInterceptor {

@@ -11,9 +11,9 @@ import { LoginRequestDto } from './dto/login-request.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { instanceToPlain } from 'class-transformer';
-import { FirebaseService } from 'src/firebase/firbase.service';
+import { FirebaseService } from '../firebase/firbase.service';
 import { OAuth2Client } from 'google-auth-library';
-import { AuthProvider } from 'src/generated/prisma/enums';
+import { AuthProvider } from '../generated/prisma/enums';
 import { RegisterResponseDto } from './dto/register-response.dto';
 @Injectable()
 export class UserService {

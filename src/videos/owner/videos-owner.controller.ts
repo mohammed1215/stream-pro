@@ -26,15 +26,15 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ChannelPreloadInterceptor } from 'src/interceptors/channel-preload.interceptor';
-import { AuthGuard } from 'src/user/guards/AuthGuard';
+import { ChannelPreloadInterceptor } from '../../interceptors/channel-preload.interceptor';
+import { AuthGuard } from '../../user/guards/AuthGuard';
 import { VideosService } from '../videos.service';
-import { SuccessResponseShape } from 'src/user/dto/ResponseShape.dto';
-import { type ChannelRequestData } from 'src/types/channel.types';
+import { SuccessResponseShape } from '../../user/dto/ResponseShape.dto';
+import { type ChannelRequestData } from '../../types/channel.types';
 import { CreateVideoDto } from '../dto/create-video.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { VideoCreatedResponseDto } from '../dto/create-video-response.dto';
-import { Channel } from 'src/decorators/channel-decorator';
+import { Channel } from '../../decorators/channel-decorator';
 import {
   PaginatedVideosOwnerResponseDto,
   VideoOwnerResponseDto,
@@ -44,10 +44,10 @@ import { UpdateVideoDto } from '../dto/update-video.dto';
 import { VideoDetailsResponseDto } from '../dto/video-details.dto';
 import { diskStorage } from 'multer';
 import { tmpdir } from 'os';
-import { extname } from 'path'; // was incorrectly 'path/win32'
+import { extname } from 'path';
 import { randomUUID } from 'crypto';
-import { JwtUserPayload } from 'src/user/user.service';
-import { User } from 'src/decorators/user-decorator';
+import { JwtUserPayload } from '../../user/user.service';
+import { User } from '../../decorators/user-decorator';
 
 const videoUploadStorage = diskStorage({
   destination: tmpdir(),

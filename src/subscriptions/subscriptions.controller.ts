@@ -11,13 +11,13 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
-import { AuthGuard } from 'src/user/guards/AuthGuard';
-import { User } from 'src/decorators/user-decorator';
-import { JwtUserPayload } from 'src/user/user.service';
+import { AuthGuard } from '../user/guards/AuthGuard';
+import { User } from '../decorators/user-decorator';
+import { JwtUserPayload } from '../user/user.service';
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { ChannelPreloadInterceptor } from 'src/interceptors/channel-preload.interceptor';
-import { type ChannelRequestData } from 'src/types/channel.types';
-import { Channel } from 'src/decorators/channel-decorator';
+import { ChannelPreloadInterceptor } from '../interceptors/channel-preload.interceptor';
+import { type ChannelRequestData } from '../types/channel.types';
+import { Channel } from '../decorators/channel-decorator';
 import {
   PaginatedSubscriptionResponseDto,
   SubscriptionResponseDto,

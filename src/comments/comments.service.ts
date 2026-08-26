@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { CommentRepository } from './repositories/comment.repository';
-import { NotificationsService } from 'src/notifications/notifications.service';
-import { NotificationType } from 'src/generated/prisma/browser';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../generated/prisma/browser';
 
 @Injectable()
 export class CommentsService {

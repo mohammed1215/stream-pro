@@ -14,9 +14,9 @@ import {
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { AuthGuard } from 'src/user/guards/AuthGuard';
-import { User } from 'src/decorators/user-decorator';
-import { JwtUserPayload } from 'src/user/user.service';
+import { AuthGuard } from '../user/guards/AuthGuard';
+import { User } from '../decorators/user-decorator';
+import { JwtUserPayload } from '../user/user.service';
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import {
   CommentResponseDto,

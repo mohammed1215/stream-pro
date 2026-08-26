@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateVideoDto } from '../dto/create-video.dto';
 import {
   VIDEO_DETAILS_SELECT,
   VIDEO_LIST_OWNER_SELECT,
   VIDEO_LIST_SELECT,
 } from './video-select';
-import { Prisma } from 'src/generated/prisma/client';
+import { Prisma } from '../../generated/prisma/client';
 import { SortByVideo } from '../dto/video-query.dto';
-import { VideoOrderByWithAggregationInput } from 'src/generated/prisma/models';
+import { VideoOrderByWithAggregationInput } from '../../generated/prisma/models';
 import { VideoSortByEnum, VideoStatusEnum } from '../enum/enums';
 
 @Injectable()

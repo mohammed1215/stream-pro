@@ -5,15 +5,15 @@ import {
 } from '@nestjs/common';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { VideoRepository } from './repositories/video.repository';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { VideoProcessingService } from 'src/video-processing/video-processing.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { VideoProcessingService } from '../video-processing/video-processing.service';
 import fs from 'fs';
 import { UpdateVideoDto } from './dto/update-video.dto';
 
 import { videoDetailsOwnerSelectFor } from './repositories/video-select';
-import { Prisma } from 'src/generated/prisma/client';
+import { Prisma } from '../generated/prisma/client';
 import { SortByVideo } from './dto/video-query.dto';
-import { buildPaginationMeta } from 'src/utils/pagination.util';
+import { buildPaginationMeta } from '../utils/pagination.util';
 import { VideoSortByEnum, VideoStatusEnum } from './enum/enums';
 
 // Single source of truth for the "owner details, enriched with this

@@ -3,9 +3,9 @@ import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VideosService } from '../videos.service';
 import { SearchVideoDto } from '../dto/search-video.dto';
 import { VideoQueryDto } from '../dto/video-query.dto';
-import { OptionalAuthGuard } from 'src/user/guards/OptionalAuthGuard';
-import { User } from 'src/decorators/user-decorator';
-import { JwtUserPayload } from 'src/user/user.service';
+import { OptionalAuthGuard } from '../../user/guards/OptionalAuthGuard';
+import { User } from '../../decorators/user-decorator';
+import { JwtUserPayload } from '../../user/user.service';
 import {
   PaginatedSearchVideoResponseDto,
   SearchVideoResponseDto,
@@ -15,7 +15,7 @@ import {
   VideoResponseDto,
 } from '../dto/video-response.dto';
 import { VideoDetailsResponseDto } from '../dto/video-details.dto';
-import { SuccessResponseShape } from 'src/user/dto/ResponseShape.dto';
+import { SuccessResponseShape } from '../../user/dto/ResponseShape.dto';
 
 @ApiTags('videos')
 @Controller('videos')

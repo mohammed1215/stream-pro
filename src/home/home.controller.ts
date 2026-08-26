@@ -1,8 +1,8 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { HomeService } from './home.service';
-import { OptionalAuthGuard } from 'src/user/guards/OptionalAuthGuard';
-import { User } from 'src/decorators/user-decorator';
-import { JwtUserPayload } from 'src/user/user.service';
+import { OptionalAuthGuard } from '../user/guards/OptionalAuthGuard';
+import { User } from '../decorators/user-decorator';
+import { JwtUserPayload } from '../user/user.service';
 import {
   FEED_SECTION_TYPE,
   FeedSection,

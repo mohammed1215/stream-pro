@@ -4,9 +4,9 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { SubscriptionRepository } from './repositories/subscription.repository';
-import { NotificationsService } from 'src/notifications/notifications.service';
-import { NotificationType } from 'src/generated/prisma/browser';
-import { Prisma } from 'src/generated/prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../generated/prisma/browser';
+import { Prisma } from '../generated/prisma/client';
 
 @Injectable()
 export class SubscriptionsService {

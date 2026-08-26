@@ -10,9 +10,9 @@ import {
 } from '@nestjs/common';
 import { WatchlaterService } from './watchlater.service';
 import { CreateWatchlaterDto } from './dto/create-watchlater.dto';
-import { User } from 'src/decorators/user-decorator';
-import { JwtUserPayload } from 'src/user/user.service';
-import { AuthGuard } from 'src/user/guards/AuthGuard';
+import { User } from '../decorators/user-decorator';
+import { JwtUserPayload } from '../user/user.service';
+import { AuthGuard } from '../user/guards/AuthGuard';
 import {
   ApiBearerAuth,
   ApiBody,

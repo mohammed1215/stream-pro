@@ -9,10 +9,10 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { WatchHistoryService } from './watch-history.service';
-import { AuthGuard } from 'src/user/guards/AuthGuard';
+import { AuthGuard } from '../user/guards/AuthGuard';
 import { TrackProgressDto } from './dto/track-progress.dto';
-import { User } from 'src/decorators/user-decorator';
-import { JwtUserPayload } from 'src/user/user.service';
+import { User } from '../decorators/user-decorator';
+import { JwtUserPayload } from '../user/user.service';
 import {
   ApiBearerAuth,
   ApiOkResponse,

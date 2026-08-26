@@ -6,8 +6,8 @@ import {
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import { UpdatePlaylistDto } from './dto/update-playlist.dto';
 import { PlaylistRepository } from './repositories/playlist.repository';
-import { NotificationsService } from 'src/notifications/notifications.service';
-import { NotificationType } from 'src/generated/prisma/browser';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../generated/prisma/browser';
 
 @Injectable()
 export class PlaylistsService {

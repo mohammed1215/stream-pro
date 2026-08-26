@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ChannelRepository } from './repositories/channel.repository';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PaginatedChannelQueryDto } from './dto/paginated-channel-videos-query.dto';
-import { buildPaginationMeta } from 'src/utils/pagination.util';
+import { buildPaginationMeta } from '../utils/pagination.util';
 import { UpdateChannelDto } from './dto/update-channel.dto';
 
 @Injectable()

@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 // import { CreateLikeDto } from './dto/create-like.dto';
 // import { UpdateLikeDto } from './dto/update-like.dto';
 import { LikeRepository } from './repositories/like.repository';
-import { NotificationsService } from 'src/notifications/notifications.service';
-import { NotificationType } from 'src/generated/prisma/enums';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '..generated/prisma/enums';
 
 @Injectable()
 export class LikesService {

@@ -39,7 +39,6 @@ export class AuthGuard implements CanActivate {
       throw new NotFoundException('token not found');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [schema, token] = bearerToken.split(' ');
     if (schema !== 'Bearer') {
       throw new BadRequestException('Token Not Found');

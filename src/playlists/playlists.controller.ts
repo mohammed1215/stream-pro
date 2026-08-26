@@ -14,9 +14,9 @@ import {
 import { PlaylistsService } from './playlists.service';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import { UpdatePlaylistDto } from './dto/update-playlist.dto';
-import { AuthGuard } from 'src/user/guards/AuthGuard';
-import { User } from 'src/decorators/user-decorator';
-import { JwtUserPayload } from 'src/user/user.service';
+import { AuthGuard } from '../user/guards/AuthGuard';
+import { User } from '../decorators/user-decorator';
+import { JwtUserPayload } from '../user/user.service';
 import {
   ApiBearerAuth,
   ApiBody,

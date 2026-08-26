@@ -4,8 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Playlist, Prisma } from 'src/generated/prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Playlist, Prisma } from '../../generated/prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class PlaylistRepository {

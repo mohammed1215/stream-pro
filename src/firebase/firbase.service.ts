@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { App, AppOptions, cert, initializeApp } from 'firebase-admin/app';
 import { getMessaging, Message } from 'firebase-admin/messaging';
-import { readFile } from 'fs/promises';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()

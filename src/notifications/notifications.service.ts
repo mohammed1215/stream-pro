@@ -6,9 +6,9 @@ import {
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { NotificationRepository } from './repositories/notification.repository';
-import { UserRepository } from 'src/user/repositories/user.repository';
-import { FirebaseService } from 'src/firebase/firbase.service';
-import { NotificationType } from 'src/generated/prisma/browser';
+import { UserRepository } from '../user/repositories/user.repository';
+import { FirebaseService } from '../firebase/firbase.service';
+import { NotificationType } from '../generated/prisma/browser';
 
 const NOTIFICATION_TITLES: Record<NotificationType, string> = {
   [NotificationType.LIKE]: 'New Like',

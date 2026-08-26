@@ -33,16 +33,15 @@ import {
 } from './dto/get-channel-response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Channel } from '../decorators/channel-decorator';
-import { type ChannelRequestData } from 'src/types/channel.types';
-import { ChannelPreloadInterceptor } from 'src/interceptors/channel-preload.interceptor';
-import { UploadThumbnailDto } from './dto/upload-thumbnail.dto';
+import { type ChannelRequestData } from '../types/channel.types';
+import { ChannelPreloadInterceptor } from '../interceptors/channel-preload.interceptor';
 import { GetChannelDetailsResponseDto } from './dto/get-channel-details-response.dto';
 import { PaginatedChannelQueryDto } from './dto/paginated-channel-videos-query.dto';
 import {
   ChannelVideoResponseDto,
   PaginatedChannelVideosResponseDto,
 } from './dto/get-channel-videos-response.dto';
-import { OptionalAuthGuard } from 'src/user/guards/OptionalAuthGuard';
+import { OptionalAuthGuard } from '../user/guards/OptionalAuthGuard';
 import {
   GetChannelPlaylistResponseDto,
   PaginatedChannelPlaylistsResponseDto,
