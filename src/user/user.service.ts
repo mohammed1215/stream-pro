@@ -14,7 +14,6 @@ import { instanceToPlain } from 'class-transformer';
 import { FirebaseService } from '../firebase/firbase.service';
 import { OAuth2Client } from 'google-auth-library';
 import { AuthProvider } from '../generated/prisma/enums';
-import { RegisterResponseDto } from './dto/register-response.dto';
 @Injectable()
 export class UserService {
   private googleClient: OAuth2Client;

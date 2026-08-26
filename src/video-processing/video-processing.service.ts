@@ -1,41 +1,44 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { getVideoDurationInSeconds } from 'get-video-duration';
-
+import { parseFile, parseBuffer } from 'music-metadata';
 @Injectable()
 export class VideoProcessingService {
-  constructor() {}
-
-  async getVideoDurationUsingFilePath(videoPath: string) {
+  async getVideoDurationUsingFilePath(videoPath: string): Promise<number> {
     try {
-      const duration = await getVideoDurationInSeconds(videoPath);
+      const metadata = await parseFile(videoPath);
+      const duration = metadata.format.duration;
+
+      if (!duration) {
+        throw new Error('Duration not found in file metadata');
+      }
+
       return Math.floor(duration);
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error(
-          'Error getting video duration from file path:',
-          error.message,
-        );
-        throw new InternalServerErrorException(
-          `Could not extract video duration from file path: ${error.message}`,
-        );
-      }
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error getting video duration from file path:', message);
+      throw new InternalServerErrorException(
+        `Could not extract video duration from file path: ${message}`,
+      );
     }
   }
 
-  async getVideoDurationUsingStream(video: Express.Multer.File) {
+  async getVideoDurationUsingStream(
+    video: Express.Multer.File,
+  ): Promise<number> {
     try {
-      const duration = await getVideoDurationInSeconds(video.stream);
+      const metadata = await parseBuffer(video.buffer, video.mimetype);
+      const duration = metadata.format.duration;
+
+      if (!duration) {
+        throw new Error('Duration not found in file metadata');
+      }
+
       return Math.floor(duration);
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error(
-          'Error getting video duration from stream:',
-          error.message,
-        );
-        throw new InternalServerErrorException(
-          `Could not extract video duration from stream: ${error.message}`,
-        );
-      }
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error getting video duration from stream:', message);
+      throw new InternalServerErrorException(
+        `Could not extract video duration from stream: ${message}`,
+      );
     }
   }
 }

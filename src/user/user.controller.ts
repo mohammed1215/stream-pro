@@ -9,7 +9,6 @@ import {
   Res,
   UseGuards,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtUserPayload, UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
