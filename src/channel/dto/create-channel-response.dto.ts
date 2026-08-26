@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { SuccessResponseShape } from '../user/dto/ResponseShape.dto';
+import { SuccessResponseShape } from '../../user/dto/ResponseShape.dto';
 
 export class CreateChannelResponseDto {
   @ApiProperty()
