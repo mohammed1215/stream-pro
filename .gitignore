@@ -59,3 +59,5 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 *.tsbuildinfo
 
 stream-pro-7e2d1-firebase-adminsdk-fbsvc-051010650a.json
+
+metadata.ts
