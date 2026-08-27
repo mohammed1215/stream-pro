@@ -17,13 +17,6 @@ export class CommentRepository {
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException(
-          'A comment with the same userId and videoId already exists.',
-        );
-      } else if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2025'
       ) {
         throw new ConflictException(
@@ -38,6 +31,7 @@ export class CommentRepository {
     filter?: Prisma.CommentWhereInput,
     pageNumber: number = 1,
     pageSize: number = 10,
+    sort: 'asc' | 'desc' = 'desc',
   ) {
     const validPage = Math.max(1, pageNumber);
     const validLimit = Math.max(1, pageSize);
@@ -46,6 +40,7 @@ export class CommentRepository {
       skip: (validPage - 1) * validLimit,
       take: validLimit,
       include: { user: true },
+      orderBy: { createdAt: sort },
     });
   }
 
@@ -96,5 +91,9 @@ export class CommentRepository {
       }
       throw error;
     }
+  }
+
+  async countComments(filter?: Prisma.CommentWhereInput) {
+    return this.prismaService.comment.count({ where: filter });
   }
 }

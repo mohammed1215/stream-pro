@@ -4,7 +4,6 @@ import {
   Controller,
   DefaultValuePipe,
   Delete,
-  ForbiddenException,
   Get,
   Param,
   ParseEnumPipe,
@@ -42,20 +41,12 @@ import {
 import { VideoSortByEnum, VideoStatusEnum } from '../enum/enums';
 import { UpdateVideoDto } from '../dto/update-video.dto';
 import { VideoDetailsResponseDto } from '../dto/video-details.dto';
-import { diskStorage } from 'multer';
-import { tmpdir } from 'os';
-import { extname } from 'path';
-import { randomUUID } from 'crypto';
 import { JwtUserPayload } from '../../user/user.service';
 import { User } from '../../decorators/user-decorator';
+import { VideoDetailsOwnerResponseDto } from '../dto/responses/owner/get-video-details.dto';
+import { memoryStorage } from 'multer';
 
-const videoUploadStorage = diskStorage({
-  destination: tmpdir(),
-  filename: (req, file, cb) => {
-    const filename = `${randomUUID()}${extname(file.originalname)}`;
-    cb(null, filename);
-  },
-});
+const videoUploadStorage = memoryStorage();
 
 @ApiTags('Owner-Videos')
 @ApiBearerAuth()
@@ -200,47 +191,14 @@ export class VideosOwnerController {
   @ApiResponse({
     status: 200,
     description: 'Video details retrieved successfully',
-    type: VideoDetailsResponseDto,
+    type: VideoDetailsOwnerResponseDto,
   })
   async findOne(
     @Param('videoId') videoId: string,
     @Channel() channel: ChannelRequestData,
     @User() user: JwtUserPayload,
   ) {
-    const videoData = await this.videosService.findOneVideoDetails(
-      videoId,
-      user.userId,
-      true,
-    );
-
-    // This is the owner-only endpoint: reject if the video does not
-    // actually belong to the authenticated user's channel, otherwise
-    // any authenticated user could read another channel's unpublished
-    // video details (including like/subscription state) by guessing ids.
-    if (videoData.channel.id !== channel.id) {
-      throw new ForbiddenException('video not owned by channel');
-    }
-
-    const channelDetails = videoData.channel;
-
-    return new VideoDetailsResponseDto(
-      videoData.id,
-      videoData.title,
-      videoData.description,
-      videoData.videoUrl,
-      videoData.thumbnailUrl,
-      channelDetails.id,
-      channelDetails.title,
-      channelDetails.channelImageUrl,
-      videoData.duration,
-      videoData.views,
-      videoData._count.comments,
-      videoData._count.likes,
-      channelDetails._count.subscriptions,
-      channelDetails.isSubscribed,
-      videoData.isLikedByUser,
-      videoData.createdAt,
-    );
+    return this.videosService.findOneVideoOwnerDetails(videoId, user.userId);
   }
   // ========================== Update Video Details ==========================
   @Patch(':videoId')

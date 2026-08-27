@@ -102,9 +102,6 @@ model Comment {
   user    User   @relation(references: [id], fields: [userId], onDelete: Cascade)
   videoId String
   video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, videoId])
-  @@index([userId, videoId])
 }
 
 model Like {

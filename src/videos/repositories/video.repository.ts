@@ -173,7 +173,11 @@ export class VideoRepository {
 
   async findOneOwnerVideoDetails(videoId: string, userId: string) {
     const video = await this.prisma.video.findUnique({
-      where: { id: videoId, isDeleted: false },
+      where: {
+        id: videoId,
+        isDeleted: false,
+        channel: { userId },
+      },
       select: {
         id: true,
         description: true,

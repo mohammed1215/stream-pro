@@ -32,14 +32,20 @@ export class PaginatedCommentsResponseDto {
   @ApiProperty({ type: [CommentResponseDto] }) items!: CommentResponseDto[];
   @ApiProperty() pageNumber!: number;
   @ApiProperty() pageSize!: number;
+  @ApiProperty() totalPages!: number;
+  @ApiProperty() hasNextPage!: boolean;
 
   constructor(
     items: CommentResponseDto[],
     pageNumber: number,
     pageSize: number,
+    totalPages: number,
+    hasNextPage: boolean,
   ) {
     this.items = items;
     this.pageNumber = pageNumber;
     this.pageSize = pageSize;
+    this.totalPages = totalPages;
+    this.hasNextPage = hasNextPage;
   }
 }

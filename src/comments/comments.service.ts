@@ -33,8 +33,18 @@ export class CommentsService {
     return comment;
   }
 
-  findAllCommentsForVideo(videoId: string, page: number, limit: number) {
-    return this.commentRepo.findAll({ videoId }, page, limit);
+  async findAllCommentsForVideo(
+    videoId: string,
+    page: number,
+    limit: number,
+    sort: 'asc' | 'desc',
+  ) {
+    return {
+      comments: await this.commentRepo.findAll({ videoId }, page, limit, sort),
+      totalPages: Math.ceil(
+        (await this.commentRepo.countComments({ videoId })) / limit,
+      ),
+    };
   }
 
   findOne(commentId: string) {

@@ -8,12 +8,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ChannelModule } from './channel/channel.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { MulterModule } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { VideosModule } from './videos/videos.module';
 import { CommentsModule } from './comments/comments.module';
 import { VideoProcessingService } from './video-processing/video-processing.service';
-import { extname } from 'path';
-import { tmpdir } from 'os';
 import { LoggerInterceptor } from './logger/logger.interceptor';
 import { LikesModule } from './likes/likes.module';
 import { WatchlaterModule } from './watchlater/watchlater.module';
@@ -24,14 +22,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { HomeModule } from './home/home.module';
 import { WatchHistoryModule } from './watch-history/watch-history.module';
 
-export const VIDEO_STORAGE = diskStorage({
-  destination: tmpdir(),
-  filename(req, file, callback) {
-    const uuid = crypto.randomUUID();
-    const filename = uuid + extname(file.originalname);
-    callback(null, filename);
-  },
-});
+export const VIDEO_STORAGE = memoryStorage();
 
 @Module({
   imports: [

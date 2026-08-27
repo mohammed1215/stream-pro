@@ -37,12 +37,12 @@ export class VideoProcessingService {
       };
       const metadata = await parseBuffer(video.buffer, video.mimetype);
       const duration = metadata.format.duration;
-
+      console.log('GETTING DURATION: ', duration);
       if (!duration) {
         throw new Error('Duration not found in file metadata');
       }
 
-      return Math.floor(duration);
+      return Math.floor(duration * 1000);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Error getting video duration from stream:', message);

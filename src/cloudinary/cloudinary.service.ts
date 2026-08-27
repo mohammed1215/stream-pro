@@ -7,6 +7,7 @@ import {
 import { v2 } from 'cloudinary';
 import { cloudinaryConfig } from './cloudinary.config';
 import { createReadStream } from 'fs';
+import { Readable } from 'stream';
 
 @Injectable()
 export class CloudinaryService implements OnModuleInit {
@@ -44,9 +45,8 @@ export class CloudinaryService implements OnModuleInit {
           if (result) resolve(result.secure_url);
         },
       );
-      const imagePath = image.path;
-      const readStream = createReadStream(imagePath);
-      readStream.pipe(stream);
+
+      Readable.from(image.buffer).pipe(stream);
     });
   }
 
@@ -79,9 +79,7 @@ export class CloudinaryService implements OnModuleInit {
           if (result) resolve(result.secure_url);
         },
       );
-      const videoPath = video.path;
-      const readStream = createReadStream(videoPath);
-      readStream.pipe(stream);
+      Readable.from(video.buffer).pipe(stream);
     });
   }
   removeImage(imageUrl: string) {

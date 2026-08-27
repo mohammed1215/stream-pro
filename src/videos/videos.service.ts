@@ -40,29 +40,22 @@ export class VideosService {
     if (!videoFile || !thumbnailFile) {
       throw new BadRequestException('video and thumbnail files are required');
     }
-    try {
-      const duration =
-        await this.videoProcessingService.getVideoDurationUsingFilePath(
-          videoFile.path,
-        );
 
-      const secureVideoUrl =
-        await this.cloudinaryService.uploadVideo(videoFile);
-      const secureThumbnailUrl =
-        await this.cloudinaryService.uploadImage(thumbnailFile);
+    const duration =
+      await this.videoProcessingService.getVideoDurationUsingStream(videoFile);
+    console.log('Video duration: ', duration);
+    const secureVideoUrl = await this.cloudinaryService.uploadVideo(videoFile);
+    const secureThumbnailUrl =
+      await this.cloudinaryService.uploadImage(thumbnailFile);
 
-      return this.videoRepo.create(
-        createVideoDto,
-        duration ?? 0,
-        videoFile.size,
-        secureThumbnailUrl,
-        secureVideoUrl,
-        channelId,
-      );
-    } finally {
-      this.removeFile(videoFile.path);
-      this.removeFile(thumbnailFile.path);
-    }
+    return this.videoRepo.create(
+      createVideoDto,
+      duration ?? 0,
+      videoFile.size,
+      secureThumbnailUrl,
+      secureVideoUrl,
+      channelId,
+    );
   }
 
   getAllVideosOfChannel(
@@ -101,11 +94,36 @@ export class VideosService {
     return { videos, ...meta };
   }
 
-  async findOneVideoDetails(videoId: string, userId?: string, owner = false) {
-    const videoData =
-      owner && userId
-        ? await this.videoRepo.findOneOwnerVideoDetails(videoId, userId)
-        : await this.videoRepo.findOneVideoDetails(videoId, userId);
+  async findOneVideoOwnerDetails(videoId: string, userId: string) {
+    const videoData = await this.videoRepo.findOneOwnerVideoDetails(
+      videoId,
+      userId,
+    );
+    if (!videoData)
+      throw new NotFoundException('video not found or not owned by channel');
+    return {
+      id: videoData.id,
+      title: videoData.title,
+      description: videoData.description,
+      videoUrl: videoData.videoUrl,
+      thumbnailUrl: videoData.thumbnailUrl,
+      channelId: videoData.channel.id,
+      channelTitle: videoData.channel.title,
+      channelImageUrl: videoData.channel.channelImageUrl,
+      duration: videoData.duration,
+      views: videoData.views,
+      commentsCount: videoData._count.comments,
+      likesCount: videoData._count.likes,
+      channelSubscribersCount: videoData.channel._count.subscriptions,
+      isSubscribed: videoData.channel.isSubscribed,
+      isLiked: videoData.isLikedByUser,
+      createdAt: videoData.createdAt,
+      isPublished: videoData.isPublished,
+    };
+  }
+
+  async findOneVideoDetails(videoId: string, userId?: string) {
+    const videoData = await this.videoRepo.findOneVideoDetails(videoId, userId);
 
     if (!videoData) throw new NotFoundException();
 
@@ -148,13 +166,13 @@ export class VideosService {
     return { message: 'video removed successfully', videoId, channelId };
   }
 
-  removeFile(filePath: string) {
-    fs.unlink(filePath, (err) => {
-      if (err) {
-        console.log('Error while removing file: ', err.message);
-      }
-    });
-  }
+  // removeFile(filePath: string) {
+  //   fs.unlink(filePath, (err) => {
+  //     if (err) {
+  //       console.log('Error while removing file: ', err.message);
+  //     }
+  //   });
+  // }
 
   // =============================== Update Video Details ==============================
 
@@ -188,50 +206,46 @@ export class VideosService {
       throw new BadRequestException('thumbnail file is required');
     }
 
-    try {
-      // Verify ownership BEFORE touching Cloudinary
-      const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
-        videoId,
-        userId,
-      );
-      if (!oldVideo) {
-        throw new NotFoundException('video not found or not owned by channel');
-      }
-
-      const imageUrl = await this.cloudinaryService.uploadImage(thumbnailFile);
-
-      let newVideo: VideoDetailsOwner | null;
-      try {
-        newVideo = await this.videoRepo.updateVideoDetails(
-          videoId,
-          channelId,
-          { thumbnailUrl: imageUrl },
-          videoDetailsOwnerSelectFor(userId),
-        );
-      } catch (err) {
-        // Roll back the orphaned upload if the DB write fails
-        await this.cloudinaryService.removeImage(imageUrl);
-        throw err;
-      }
-
-      if (!newVideo) {
-        // Row disappeared between the ownership check and the update
-        // (e.g. deleted concurrently) - clean up and report not found.
-        await this.cloudinaryService.removeImage(imageUrl);
-        throw new NotFoundException('video not found or not owned by channel');
-      }
-
-      if (
-        oldVideo.thumbnailUrl &&
-        oldVideo.thumbnailUrl !== newVideo.thumbnailUrl
-      ) {
-        this.cloudinaryService.removeImage(oldVideo.thumbnailUrl);
-      }
-
-      return newVideo;
-    } finally {
-      this.removeFile(thumbnailFile.path);
+    // Verify ownership BEFORE touching Cloudinary
+    const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
+      videoId,
+      userId,
+    );
+    if (!oldVideo) {
+      throw new NotFoundException('video not found or not owned by channel');
     }
+
+    const imageUrl = await this.cloudinaryService.uploadImage(thumbnailFile);
+
+    let newVideo: VideoDetailsOwner | null;
+    try {
+      newVideo = await this.videoRepo.updateVideoDetails(
+        videoId,
+        channelId,
+        { thumbnailUrl: imageUrl },
+        videoDetailsOwnerSelectFor(userId),
+      );
+    } catch (err) {
+      // Roll back the orphaned upload if the DB write fails
+      await this.cloudinaryService.removeImage(imageUrl);
+      throw err;
+    }
+
+    if (!newVideo) {
+      // Row disappeared between the ownership check and the update
+      // (e.g. deleted concurrently) - clean up and report not found.
+      await this.cloudinaryService.removeImage(imageUrl);
+      throw new NotFoundException('video not found or not owned by channel');
+    }
+
+    if (
+      oldVideo.thumbnailUrl &&
+      oldVideo.thumbnailUrl !== newVideo.thumbnailUrl
+    ) {
+      this.cloudinaryService.removeImage(oldVideo.thumbnailUrl);
+    }
+
+    return newVideo;
   }
 
   async updateVideoMedia(
@@ -244,49 +258,45 @@ export class VideosService {
       throw new BadRequestException('thumbnail file is required');
     }
 
-    try {
-      // Verify ownership BEFORE touching Cloudinary
-      const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
-        videoId,
-        userId,
-      );
-      if (!oldVideo) {
-        throw new NotFoundException('video not found or not owned by channel');
-      }
-
-      const videoUrl = await this.cloudinaryService.uploadVideo(video);
-
-      let newVideo: VideoDetailsOwner | null;
-      try {
-        newVideo = await this.videoRepo.updateVideoDetails(
-          videoId,
-          channelId,
-          { videoUrl },
-          videoDetailsOwnerSelectFor(userId),
-        );
-      } catch (err) {
-        // Roll back the orphaned upload if the DB write fails
-        await this.cloudinaryService.removeVideo(videoUrl);
-        throw err;
-      }
-
-      if (!newVideo) {
-        // Row disappeared between the ownership check and the update
-        // (e.g. deleted concurrently) - clean up and report not found.
-        await this.cloudinaryService.removeVideo(videoUrl);
-        throw new NotFoundException('video not found or not owned by channel');
-      }
-
-      if (
-        oldVideo.thumbnailUrl &&
-        oldVideo.thumbnailUrl !== newVideo.thumbnailUrl
-      ) {
-        this.cloudinaryService.removeVideo(oldVideo.thumbnailUrl);
-      }
-
-      return newVideo;
-    } finally {
-      this.removeFile(video.path);
+    // Verify ownership BEFORE touching Cloudinary
+    const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
+      videoId,
+      userId,
+    );
+    if (!oldVideo) {
+      throw new NotFoundException('video not found or not owned by channel');
     }
+
+    const videoUrl = await this.cloudinaryService.uploadVideo(video);
+
+    let newVideo: VideoDetailsOwner | null;
+    try {
+      newVideo = await this.videoRepo.updateVideoDetails(
+        videoId,
+        channelId,
+        { videoUrl },
+        videoDetailsOwnerSelectFor(userId),
+      );
+    } catch (err) {
+      // Roll back the orphaned upload if the DB write fails
+      await this.cloudinaryService.removeVideo(videoUrl);
+      throw err;
+    }
+
+    if (!newVideo) {
+      // Row disappeared between the ownership check and the update
+      // (e.g. deleted concurrently) - clean up and report not found.
+      await this.cloudinaryService.removeVideo(videoUrl);
+      throw new NotFoundException('video not found or not owned by channel');
+    }
+
+    if (
+      oldVideo.thumbnailUrl &&
+      oldVideo.thumbnailUrl !== newVideo.thumbnailUrl
+    ) {
+      this.cloudinaryService.removeVideo(oldVideo.thumbnailUrl);
+    }
+
+    return newVideo;
   }
 }

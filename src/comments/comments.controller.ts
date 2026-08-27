@@ -68,12 +68,15 @@ export class CommentsController {
     @Query('page', new DefaultValuePipe(1), new ParseIntPipe()) page: number,
     @Query('limit', new DefaultValuePipe(10), new ParseIntPipe()) limit: number,
     @Param('videoId') videoId: string,
+    @Query('sort', new DefaultValuePipe('desc')) sort: 'asc' | 'desc',
   ) {
-    const comments = await this.commentsService.findAllCommentsForVideo(
-      videoId,
-      page,
-      limit,
-    );
+    const { comments, totalPages } =
+      await this.commentsService.findAllCommentsForVideo(
+        videoId,
+        page,
+        limit,
+        sort,
+      );
 
     const commentList = comments.map(
       (comment) =>
@@ -88,7 +91,13 @@ export class CommentsController {
         ),
     );
 
-    return new PaginatedCommentsResponseDto(commentList, page, limit);
+    return new PaginatedCommentsResponseDto(
+      commentList,
+      page,
+      limit,
+      totalPages,
+      page < totalPages,
+    );
   }
 
   // @Get(':id')
