@@ -2,38 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DeviceType } from '../../generated/prisma/enums';
 
+const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class RefreshTokenRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async saveToken(
-    userId: string,
-    refreshToken: string,
-    deviceToken: string | null,
-    deviceType: DeviceType | null,
-    deviceId: string | null,
-  ): Promise<void> {
-    await this.prisma.refreshToken.create({
-      data: {
-        userId,
-        tokenHash: refreshToken,
-        deviceToken,
-        deviceType,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        deviceId,
-      },
-    });
-  }
-
-  async findByUserIdAndDeviceId(userId: string, deviceId: string) {
-    return this.prisma.refreshToken.findFirst({
-      where: { userId, deviceId },
-    });
-  }
-
   async findByToken(token: string) {
     return this.prisma.refreshToken.findUnique({
       where: { tokenHash: token },
+      include: { user: true },
     });
   }
 
@@ -60,24 +38,6 @@ export class RefreshTokenRepository {
       .filter((t): t is string => t !== null);
   }
 
-  async updateToken(
-    refreshToken: string,
-    deviceToken: string | null,
-    deviceType: DeviceType | null,
-    deviceId: string | null,
-    tokenHash: string,
-  ) {
-    await this.prisma.refreshToken.update({
-      where: { tokenHash: refreshToken },
-      data: {
-        deviceToken,
-        deviceType,
-        deviceId,
-        tokenHash,
-      },
-    });
-  }
-
   async upsertToken(
     userId: string,
     tokenHash: string,
@@ -85,19 +45,15 @@ export class RefreshTokenRepository {
     deviceType: DeviceType | null,
     deviceId: string | null,
   ): Promise<void> {
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+
     if (!deviceId) {
-      // If no deviceId is provided, always create a new row (like a separate web session)
       await this.prisma.refreshToken.create({
-        data: {
-          userId,
-          tokenHash,
-          deviceToken,
-          deviceType,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
+        data: { userId, tokenHash, deviceToken, deviceType, expiresAt },
       });
       return;
     }
+
     await this.prisma.refreshToken.upsert({
       where: { userId_deviceId: { userId, deviceId } },
       create: {
@@ -106,15 +62,44 @@ export class RefreshTokenRepository {
         deviceToken,
         deviceType,
         deviceId,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        expiresAt,
       },
       update: {
         tokenHash,
         deviceToken,
         deviceType,
-        deviceId,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        expiresAt,
+        isRevoked: false,
       },
+    });
+  }
+
+  async rotateToken(
+    id: string,
+    newTokenHash: string,
+    newExpiresAt: Date,
+  ): Promise<void> {
+    await this.prisma.refreshToken.update({
+      where: { id },
+      data: {
+        tokenHash: newTokenHash,
+        expiresAt: newExpiresAt,
+        lastUsedAt: new Date(),
+      },
+    });
+  }
+
+  async revoke(tokenHash: string): Promise<void> {
+    await this.prisma.refreshToken.update({
+      where: { tokenHash },
+      data: { isRevoked: true },
+    });
+  }
+
+  async revokeAllForUser(userId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId },
+      data: { isRevoked: true },
     });
   }
 }

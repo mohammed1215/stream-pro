@@ -37,11 +37,7 @@ export class UserService {
 
   async register(createUserDto: CreateUserDto) {
     //check if email in database
-    const { email, deviceToken, deviceType, deviceId } = createUserDto;
-    const user = await this.userRepo.findByEmail(email);
-    if (user) {
-      throw new ConflictException();
-    }
+    const { deviceToken, deviceType, deviceId } = createUserDto;
 
     // hash password
     const password = await bcrypt.hash(createUserDto.password, 10);
@@ -188,22 +184,50 @@ export class UserService {
   // ========================= GENERATE AUTH TOKENS ============================
   async generateAuthToken({ userId, email, name }: JwtUserPayload) {
     const jwtPayload = new JwtUserPayload(userId, email, name);
-    const accessToken = await this.jwtService.signAsync(
-      instanceToPlain(jwtPayload),
-      { expiresIn: '4h' },
-    );
-    const refreshToken = await this.jwtService.signAsync(
-      instanceToPlain(jwtPayload),
-      {
-        secret: this.config.get('JWT_REFRESH_TOKEN_SECRET'),
-        expiresIn: '30d',
-      },
-    );
+    const accessToken = await this.generateAccessToken(jwtPayload);
+    const refreshToken = this.generateRefreshToken();
 
     return { accessToken, refreshToken };
   }
 
-  hashToken(token: string) {
+  async refreshToken(refreshToken: string) {
+    const tokenHash = this.hashToken(refreshToken);
+    const tokenRecord = await this.refreshTokenRepo.findByToken(tokenHash);
+
+    if (!tokenRecord) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (tokenRecord.isRevoked) {
+      await this.refreshTokenRepo.revokeAllForUser(tokenRecord.userId);
+      throw new UnauthorizedException(
+        'Session invalidated. Please login again.',
+      );
+    }
+
+    if (tokenRecord.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token expired');
+    }
+
+    const jwtPayload = new JwtUserPayload(
+      tokenRecord.user.id,
+      tokenRecord.user.email,
+      tokenRecord.user.name,
+    );
+    const accessToken = await this.generateAccessToken(jwtPayload);
+    const newRefreshToken = this.generateRefreshToken();
+    const newExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    await this.refreshTokenRepo.rotateToken(
+      tokenRecord.id,
+      this.hashToken(newRefreshToken),
+      newExpiresAt,
+    );
+
+    return { accessToken, refreshToken: newRefreshToken };
+  }
+
+  private hashToken(token: string) {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
@@ -239,6 +263,16 @@ export class UserService {
         avatarUrl: user.avatarUrl,
       },
     };
+  }
+
+  private generateRefreshToken() {
+    return crypto.randomBytes(64).toString('hex');
+  }
+
+  private generateAccessToken(payload: JwtUserPayload) {
+    return this.jwtService.signAsync(instanceToPlain(payload), {
+      expiresIn: '15m',
+    });
   }
 }
 

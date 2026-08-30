@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '../../generated/prisma/client';
 
@@ -7,19 +7,29 @@ export class UserRepository {
   constructor(private prisma: PrismaService) {}
 
   async create(user: Prisma.UserCreateInput) {
-    const newUser = await this.prisma.user.create({
-      data: user,
-      select: {
-        id: true,
-        email: true,
-        avatarUrl: true,
-        name: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    try {
+      const newUser = await this.prisma.user.create({
+        data: user,
+        select: {
+          id: true,
+          email: true,
+          avatarUrl: true,
+          name: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
 
-    return newUser;
+      return newUser;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Email already registered');
+      }
+      throw error;
+    }
   }
 
   async findById(id: string) {

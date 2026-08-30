@@ -118,4 +118,9 @@ export class UserController {
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('refreshToken');
   }
+
+  @Post('auth/refresh')
+  refreshToken(@Body() refreshToken: string) {
+    return this.userService.refreshToken(refreshToken);
+  }
 }
