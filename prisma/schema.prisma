@@ -19,19 +19,16 @@ enum AuthProvider {
 }
 
 model User {
-  id          String       @id @default(uuid())
-  email       String       @unique
-  name        String
-  password    String?
-  avatarUrl   String?
-  deviceId    String?
-  deviceType  DeviceType?
-  deviceToken String?
-  provider    AuthProvider @default(LOCAL)
-  googleId    String?      @unique
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @default(now()) @updatedAt
-  isDeleted   Boolean      @default(false)
+  id        String       @id @default(uuid())
+  email     String       @unique
+  name      String
+  password  String?
+  avatarUrl String?
+  provider  AuthProvider @default(LOCAL)
+  googleId  String?      @unique
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @default(now()) @updatedAt
+  isDeleted Boolean      @default(false)
 
   channel                Channel?
   comments               Comment[]
@@ -42,6 +39,26 @@ model User {
   notificationsRecipient Notification[] @relation(name: "NotificationsRecipient")
   notificationsActor     Notification[] @relation(name: "NotificationsActor")
   watchHistories         WatchHistory[]
+  refreshTokens          RefreshToken[]
+}
+
+model RefreshToken {
+  id          String      @id @default(uuid())
+  tokenHash   String      @unique
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId    String?
+  deviceType  DeviceType?
+  deviceToken String?
+  isRevoked   Boolean     @default(false)
+  expiresAt   DateTime
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+  lastUsedAt DateTime?
+
+  @@unique([userId, deviceId])
+  @@index([userId])
 }
 
 enum DeviceType {

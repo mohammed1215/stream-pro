@@ -1,14 +1,10 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { NotificationRepository } from './repositories/notification.repository';
 import { UserRepository } from '../user/repositories/user.repository';
 import { FirebaseService } from '../firebase/firbase.service';
 import { NotificationType } from '../generated/prisma/browser';
+import { RefreshTokenRepository } from '../user/repositories/refresh-token.repository';
 
 const NOTIFICATION_TITLES: Record<NotificationType, string> = {
   [NotificationType.LIKE]: 'New Like',
@@ -23,6 +19,7 @@ export class NotificationsService {
     private readonly notificationRepository: NotificationRepository,
     private readonly firebaseService: FirebaseService,
     private readonly userRepo: UserRepository,
+    private readonly refreshTokenRepo: RefreshTokenRepository,
   ) {}
   async create(createNotificationDto: CreateNotificationDto) {
     const notification = await this.notificationRepository.createNotification(
@@ -39,18 +36,25 @@ export class NotificationsService {
       throw new NotFoundException(
         `User with id ${notification.recipientId} not found`,
       );
+    const deviceTokens =
+      await this.refreshTokenRepo.findActiveDeviceTokensByUserId(user.id);
 
-    if (user.deviceToken) {
-      await this.firebaseService.sendPushNotification(
-        user.deviceToken,
-        NOTIFICATION_TITLES[notification.type],
-        notification.message,
-        {
-          contextId: notification.contextId ?? '',
-          notificationId: notification.id,
-        },
+    if (deviceTokens.length > 0) {
+      await Promise.all(
+        deviceTokens.map((token) =>
+          this.firebaseService.sendPushNotification(
+            token,
+            NOTIFICATION_TITLES[notification.type],
+            notification.message,
+            {
+              contextId: notification.contextId ?? '',
+              notificationId: notification.id,
+            },
+          ),
+        ),
       );
     }
+
     return notification;
   }
 

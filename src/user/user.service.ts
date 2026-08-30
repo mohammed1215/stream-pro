@@ -13,7 +13,10 @@ import { ConfigService } from '@nestjs/config';
 import { instanceToPlain } from 'class-transformer';
 import { FirebaseService } from '../firebase/firbase.service';
 import { OAuth2Client } from 'google-auth-library';
-import { AuthProvider } from '../generated/prisma/enums';
+import { AuthProvider, DeviceType } from '../generated/prisma/enums';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
+import * as crypto from 'crypto';
+
 @Injectable()
 export class UserService {
   private googleClient: OAuth2Client;
@@ -22,6 +25,7 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly firebaseService: FirebaseService,
+    private readonly refreshTokenRepo: RefreshTokenRepository,
   ) {
     this.googleClient = new OAuth2Client(
       config.get('GOOGLE_CLIENT_ID'),
@@ -33,7 +37,7 @@ export class UserService {
 
   async register(createUserDto: CreateUserDto) {
     //check if email in database
-    const { email } = createUserDto;
+    const { email, deviceToken, deviceType, deviceId } = createUserDto;
     const user = await this.userRepo.findByEmail(email);
     if (user) {
       throw new ConflictException();
@@ -48,21 +52,15 @@ export class UserService {
     });
 
     //return response
-    const { accessToken, refreshToken } = await this.generateAuthToken({
-      userId: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-    });
-    return {
-      accessToken,
-      refreshToken,
-      user: {
+    return this.issueTokensForUser(
+      {
         id: newUser.id,
         email: newUser.email,
-        name: newUser.name,
         avatarUrl: newUser.avatarUrl,
+        name: newUser.name,
       },
-    };
+      { deviceId, deviceToken, deviceType },
+    );
   }
 
   async login(loginDto: LoginRequestDto) {
@@ -85,30 +83,17 @@ export class UserService {
       throw new UnauthorizedException('invalid credentials');
     }
 
-    // update user's device information
-    await this.userRepo.update(user.id, {
-      deviceId,
-      deviceToken,
-      deviceType,
-    });
-
     //generate jwt refresh token
     // generate jwt access token
-    const { accessToken, refreshToken } = await this.generateAuthToken({
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-    });
-    return {
-      accessToken,
-      refreshToken,
-      user: {
+    return this.issueTokensForUser(
+      {
         id: user.id,
         email: user.email,
-        name: user.name,
         avatarUrl: user.avatarUrl,
+        name: user.name,
       },
-    };
+      { deviceId, deviceToken, deviceType },
+    );
   }
 
   async verifyGoogleToken(idToken: string) {
@@ -135,9 +120,15 @@ export class UserService {
     };
   }
 
-  async googleLogin(token: string) {
+  async googleLogin(
+    token: string,
+    deviceInfo?: {
+      deviceId?: string | null;
+      deviceToken?: string | null;
+      deviceType?: DeviceType | null;
+    },
+  ) {
     const payload = await this.verifyGoogleToken(token);
-
     if (!payload.email) {
       throw new UnauthorizedException('Invalid Google token');
     }
@@ -147,25 +138,10 @@ export class UserService {
     );
 
     if (existingGoogleUser) {
-      const { accessToken, refreshToken } = await this.generateAuthToken({
-        userId: existingGoogleUser.id,
-        email: existingGoogleUser.email,
-        name: existingGoogleUser.name,
-      });
-      return {
-        accessToken,
-        refreshToken,
-        user: {
-          id: existingGoogleUser.id,
-          email: existingGoogleUser.email,
-          name: existingGoogleUser.name,
-          avatarUrl: existingGoogleUser.avatarUrl,
-        },
-      };
+      return this.issueTokensForUser(existingGoogleUser, deviceInfo);
     }
 
     const existingEmailUser = await this.userRepo.findByEmail(payload.email);
-
     if (existingEmailUser) {
       throw new ConflictException(
         'This email is already registered. Please login with your password instead.',
@@ -180,23 +156,9 @@ export class UserService {
       googleId: payload.googleId,
       avatarUrl: payload.picture,
     });
-    const { accessToken, refreshToken } = await this.generateAuthToken({
-      userId: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-    });
-    return {
-      accessToken,
-      refreshToken,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        avatarUrl: newUser.avatarUrl,
-      },
-    };
-  }
 
+    return this.issueTokensForUser(newUser, deviceInfo);
+  }
   async checkUserExistsByEmail(email: string) {
     const user = await this.userRepo.findByEmail(email);
     return user ? true : false;
@@ -239,6 +201,44 @@ export class UserService {
     );
 
     return { accessToken, refreshToken };
+  }
+
+  hashToken(token: string) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private async issueTokensForUser(
+    user: { id: string; email: string; name: string; avatarUrl: string | null },
+    deviceInfo?: {
+      deviceId?: string | null;
+      deviceToken?: string | null;
+      deviceType?: DeviceType | null;
+    },
+  ) {
+    const { accessToken, refreshToken } = await this.generateAuthToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+    });
+
+    await this.refreshTokenRepo.upsertToken(
+      user.id,
+      this.hashToken(refreshToken),
+      deviceInfo?.deviceToken ?? null,
+      deviceInfo?.deviceType ?? null,
+      deviceInfo?.deviceId ?? null,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+      },
+    };
   }
 }
 

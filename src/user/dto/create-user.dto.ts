@@ -1,9 +1,12 @@
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsStrongPassword,
 } from 'class-validator';
+import { DeviceType } from '../../generated/prisma/browser';
 
 export class CreateUserDto {
   @IsString()
@@ -23,4 +26,17 @@ export class CreateUserDto {
   })
   @IsNotEmpty()
   password!: string;
+
+  @IsOptional()
+  @IsNotEmpty()
+  deviceId?: string;
+
+  @IsOptional()
+  @IsNotEmpty()
+  deviceToken?: string;
+
+  @IsOptional()
+  @IsNotEmpty()
+  @IsEnum(DeviceType)
+  deviceType?: DeviceType;
 }

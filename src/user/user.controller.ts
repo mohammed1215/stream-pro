@@ -113,4 +113,9 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
+
+  @Post('auth/logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('refreshToken');
+  }
 }
