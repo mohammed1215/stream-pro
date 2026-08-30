@@ -25,7 +25,11 @@ export class HomeController {
           type: FEED_SECTION_TYPE.SUBSCRIPTIONS,
           key: 'subscriptions',
           title: 'Subscriptions',
-          videos: feed.subscriptions,
+          videos: feed.subscriptions.map(({ channel, duration, ...video }) => ({
+            channel,
+            ...video,
+            durationSeconds: duration,
+          })),
         }),
       );
     }
@@ -35,7 +39,11 @@ export class HomeController {
           type: FEED_SECTION_TYPE.TRENDING,
           key: 'trending',
           title: 'Trending',
-          videos: feed.trending,
+          videos: feed.trending.map(({ channel, duration, ...video }) => ({
+            channel,
+            ...video,
+            durationSeconds: duration,
+          })),
         }),
       );
     }
@@ -45,7 +53,11 @@ export class HomeController {
           type: FEED_SECTION_TYPE.LATEST,
           key: 'latest',
           title: 'Latest',
-          videos: feed.latest,
+          videos: feed.latest.map(({ channel, duration, ...video }) => ({
+            channel,
+            ...video,
+            durationSeconds: duration,
+          })),
         }),
       );
     }

@@ -123,7 +123,7 @@ export class PlaylistsService {
         videoId: v.videoId,
         title: v.video.title,
         thumbnailUrl: v.video.thumbnailUrl,
-        duration: v.video.duration,
+        durationSeconds: v.video.duration,
         views: v.video.views,
         createdAt: v.video.createdAt,
         channelId: v.video.channel.id,

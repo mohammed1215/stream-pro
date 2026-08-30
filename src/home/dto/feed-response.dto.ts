@@ -2,7 +2,7 @@ export class VideoFeedItem {
   id: string;
   title: string;
   thumbnailUrl: string;
-  duration: number;
+  durationSeconds: number;
   views: number;
   createdAt: Date;
   channel: {
@@ -15,7 +15,7 @@ export class VideoFeedItem {
     id,
     title,
     thumbnailUrl,
-    duration,
+    durationSeconds,
     views,
     createdAt,
     channel,
@@ -23,7 +23,7 @@ export class VideoFeedItem {
     id: string;
     title: string;
     thumbnailUrl: string;
-    duration: number;
+    durationSeconds: number;
     views: number;
     createdAt: Date;
     channel: {
@@ -35,7 +35,7 @@ export class VideoFeedItem {
     this.id = id;
     this.title = title;
     this.thumbnailUrl = thumbnailUrl;
-    this.duration = duration;
+    this.durationSeconds = durationSeconds;
     this.views = views;
     this.createdAt = createdAt;
     this.channel = channel;

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateWatchHistoryDto } from './dto/create-watch-history.dto';
 import { WatchHistoryRespository } from './repositories/watch-history.respository';
-import { VideoRepository } from 'src/videos/repositories/video.repository';
+import { VideoRepository } from '../videos/repositories/video.repository';
 import { isAfter, startOfToday, startOfYesterday, subDays } from 'date-fns';
 
 export interface WatchHistoryItem {
@@ -14,7 +14,7 @@ export interface WatchHistoryItem {
   video: {
     id: string;
     title: string;
-    duration: number;
+    durationSeconds: number;
     thumbnailUrl: string;
   };
   watchedSeconds: number;
@@ -39,7 +39,6 @@ export class WatchHistoryService {
     if (!video) throw new NotFoundException('Video not found');
 
     const clampedSeconds = Math.min(watchedSeconds, video.duration);
-
     return this.watchHistoryRepository.upsertProgress({
       userId,
       videoId,
@@ -55,7 +54,18 @@ export class WatchHistoryService {
       cursor,
       limit,
     );
-    return this.groupByDate(items);
+
+    const newItems = items.map(({ video, ...rest }) => ({
+      video: {
+        id: video.id,
+        title: video.title,
+        thumbnailUrl: video.thumbnailUrl,
+        durationSeconds: video.duration,
+      },
+      ...rest,
+    }));
+
+    return this.groupByDate(newItems);
   }
 
   private groupByDate(items: WatchHistoryItem[]) {

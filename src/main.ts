@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import metadata from './metadata';
 declare global {
   interface BigInt {
     toJSON(): string;
@@ -20,7 +21,7 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
-
+  await SwaggerModule.loadPluginMetadata(metadata);
   const config = new DocumentBuilder()
     .setTitle('Your API Title')
     .setDescription(

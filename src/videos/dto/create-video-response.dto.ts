@@ -12,7 +12,7 @@ export class CreateVideoResponseDto {
   @ApiProperty({ type: Date })
   updatedAt!: Date;
   @ApiProperty({ type: Number })
-  duration!: number;
+  durationSeconds!: number;
   @ApiProperty({ type: Number })
   size!: bigint;
   @ApiProperty({ type: Boolean })

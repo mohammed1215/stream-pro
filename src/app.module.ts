@@ -21,6 +21,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { HomeModule } from './home/home.module';
 import { WatchHistoryModule } from './watch-history/watch-history.module';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 export const VIDEO_STORAGE = memoryStorage();
 
@@ -55,14 +57,31 @@ export const VIDEO_STORAGE = memoryStorage();
     FirebaseModule,
     HomeModule,
     WatchHistoryModule,
+
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,
+        limit: 3,
+      },
+      {
+        name: 'medium',
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
   ],
   controllers: [AppController],
   providers: [
     AppService,
     VideoProcessingService,
     {
-      provide: 'APP_INTERCEPTOR',
+      provide: APP_INTERCEPTOR,
       useClass: LoggerInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

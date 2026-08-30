@@ -10,7 +10,7 @@ class VideoSummary {
   createdAt!: Date;
   channel!: ChannelSummary;
   title!: string;
-  duration!: number;
+  durationSeconds!: number;
   @ApiProperty({ nullable: true }) thumbnailUrl!: string | null;
   views!: number;
 }

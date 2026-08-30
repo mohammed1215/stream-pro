@@ -8,7 +8,7 @@ export class VideoOwnerResponseDto {
   @ApiProperty() channelId: string;
   @ApiProperty() channelTitle: string;
   @ApiProperty() channelImageUrl: string | null;
-  @ApiProperty() duration: number;
+  @ApiProperty() durationSeconds: number;
   @ApiProperty() views: number;
   @ApiProperty() isPublished: boolean;
   @ApiProperty() description: string;
@@ -22,7 +22,7 @@ export class VideoOwnerResponseDto {
     channelId: string,
     channelTitle: string,
     channelImageUrl: string | null,
-    duration: number,
+    durationSeconds: number,
     views: number,
     isPublished: boolean,
     description: string,
@@ -35,7 +35,7 @@ export class VideoOwnerResponseDto {
     this.channelId = channelId;
     this.channelTitle = channelTitle;
     this.channelImageUrl = channelImageUrl;
-    this.duration = duration;
+    this.durationSeconds = durationSeconds;
     this.views = views;
     this.isPublished = isPublished;
     this.description = description;

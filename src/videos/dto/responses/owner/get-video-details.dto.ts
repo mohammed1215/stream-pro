@@ -9,7 +9,7 @@ export class VideoDetailsOwnerResponseDto {
   @ApiProperty() channelTitle!: string;
   @ApiProperty({ nullable: true, type: 'string' }) channelImageUrl!:
     string | null;
-  @ApiProperty() duration!: number;
+  @ApiProperty() durationSeconds!: number;
   @ApiProperty() views!: number;
   @ApiProperty() isPublished!: boolean;
 }

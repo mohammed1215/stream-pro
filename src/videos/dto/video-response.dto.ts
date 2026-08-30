@@ -8,7 +8,7 @@ export class VideoResponseDto {
   @ApiProperty() channelId: string;
   @ApiProperty() channelTitle: string;
   @ApiProperty() channelImageUrl: string | null;
-  @ApiProperty() duration: number;
+  @ApiProperty() durationSeconds: number;
   @ApiProperty() views: number;
 
   constructor(
@@ -19,7 +19,7 @@ export class VideoResponseDto {
     channelId: string,
     channelTitle: string,
     channelImageUrl: string | null,
-    duration: number,
+    durationSeconds: number,
     views: number,
   ) {
     this.videoId = id;
@@ -29,7 +29,7 @@ export class VideoResponseDto {
     this.channelId = channelId;
     this.channelTitle = channelTitle;
     this.channelImageUrl = channelImageUrl;
-    this.duration = duration;
+    this.durationSeconds = durationSeconds;
     this.views = views;
   }
 }

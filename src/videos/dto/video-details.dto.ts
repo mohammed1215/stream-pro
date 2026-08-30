@@ -19,7 +19,7 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
     channelId: string,
     channelTitle: string,
     channelImageUrl: string | null,
-    duration: number,
+    durationSeconds: number,
     views: number,
     commentsCount: number,
     likesCount: number,
@@ -36,7 +36,7 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
       channelId,
       channelTitle,
       channelImageUrl,
-      duration,
+      durationSeconds,
       views,
     );
     this.description = description;

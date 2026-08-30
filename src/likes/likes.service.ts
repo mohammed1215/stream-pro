@@ -35,8 +35,26 @@ export class LikesService {
       limit,
     );
 
+    const newItems = items.map((item) => ({
+      id: item.id,
+      createdAt: item.createdAt,
+      video: {
+        id: item.video.id,
+        createdAt: item.video.createdAt,
+        channel: {
+          id: item.video.channel.id,
+          title: item.video.channel.title,
+          channelImageUrl: item.video.channel.channelImageUrl,
+        },
+        title: item.video.title,
+        durationSeconds: item.video.duration,
+        thumbnailUrl: item.video.thumbnailUrl,
+        views: item.video.views,
+      },
+    }));
+
     const videoCount = await this.likeRepository.countLikedVideos(userId);
-    return { items, videoCount };
+    return { items: newItems, videoCount };
   }
 
   // findOne(id: number) {

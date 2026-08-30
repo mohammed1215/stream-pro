@@ -100,13 +100,16 @@ export class VideosOwnerController {
     ) {
       throw new BadRequestException('video and thumbnail files are required');
     }
-    const videoServiceData = await this.videosService.create(
+    const { duration, ...videoServiceData } = await this.videosService.create(
       channel.id,
       createVideoDto,
       files.video[0],
       files.thumbnail[0],
     );
-    return new SuccessResponseShape(videoServiceData);
+    return new SuccessResponseShape({
+      ...videoServiceData,
+      durationSeconds: duration,
+    });
   }
 
   // ========================== Find Videos ==========================

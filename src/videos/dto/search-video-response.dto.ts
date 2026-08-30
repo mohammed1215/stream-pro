@@ -4,7 +4,7 @@ export class SearchVideoResponseDto {
   @ApiProperty() videoId: string;
   @ApiProperty() title: string;
   @ApiProperty() thumbnailUrl: string;
-  @ApiProperty() duration: number;
+  @ApiProperty() durationSeconds: number;
   @ApiProperty() videoUrl: string;
   @ApiProperty() views: number;
   @ApiProperty() channelId: string;
@@ -16,7 +16,7 @@ export class SearchVideoResponseDto {
     videoId: string,
     title: string,
     thumbnailUrl: string,
-    duration: number,
+    durationSeconds: number,
     videoUrl: string,
     views: number = 0,
     channelId: string,
@@ -27,7 +27,7 @@ export class SearchVideoResponseDto {
     this.videoId = videoId;
     this.title = title;
     this.thumbnailUrl = thumbnailUrl;
-    this.duration = duration;
+    this.durationSeconds = durationSeconds;
     this.videoUrl = videoUrl;
     this.views = views;
     this.channelId = channelId;

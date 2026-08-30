@@ -8,7 +8,7 @@ export class VideoOfPlaylistResponseDto {
   @ApiProperty() indexOfVideo: number;
   @ApiProperty() playlistId: string;
   @ApiProperty() createdAt: Date;
-  @ApiProperty() duration: number;
+  @ApiProperty() durationSeconds: number;
 
   constructor(
     videoId: string,
@@ -18,7 +18,7 @@ export class VideoOfPlaylistResponseDto {
     indexOfVideo: number,
     playlistId: string,
     createdAt: Date,
-    duration: number,
+    durationSeconds: number,
   ) {
     this.videoId = videoId;
     this.title = title;
@@ -27,7 +27,7 @@ export class VideoOfPlaylistResponseDto {
     this.indexOfVideo = indexOfVideo;
     this.playlistId = playlistId;
     this.createdAt = createdAt;
-    this.duration = duration;
+    this.durationSeconds = durationSeconds;
   }
 }
 

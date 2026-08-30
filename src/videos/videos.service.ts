@@ -41,16 +41,16 @@ export class VideosService {
       throw new BadRequestException('video and thumbnail files are required');
     }
 
-    const duration =
+    const durationSeconds =
       await this.videoProcessingService.getVideoDurationUsingStream(videoFile);
-    console.log('Video duration: ', duration);
+    console.log('Video duration: ', durationSeconds);
     const secureVideoUrl = await this.cloudinaryService.uploadVideo(videoFile);
     const secureThumbnailUrl =
       await this.cloudinaryService.uploadImage(thumbnailFile);
 
     return this.videoRepo.create(
       createVideoDto,
-      duration ?? 0,
+      durationSeconds ?? 0,
       videoFile.size,
       secureThumbnailUrl,
       secureVideoUrl,
@@ -110,7 +110,7 @@ export class VideosService {
       channelId: videoData.channel.id,
       channelTitle: videoData.channel.title,
       channelImageUrl: videoData.channel.channelImageUrl,
-      duration: videoData.duration,
+      durationSeconds: videoData.duration,
       views: videoData.views,
       commentsCount: videoData._count.comments,
       likesCount: videoData._count.likes,

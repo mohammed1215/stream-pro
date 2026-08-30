@@ -21,9 +21,26 @@ export class WatchlaterService {
       cursor,
       limit,
     );
+
+    const newItems = items.map((item) => ({
+      video: {
+        id: item.video.id,
+        title: item.video.title,
+        thumbnailUrl: item.video.thumbnailUrl,
+        durationSeconds: item.video.duration,
+        views: item.video.views,
+        createdAt: item.video.createdAt,
+        channel: {
+          id: item.video.channel.id,
+          title: item.video.channel.title,
+          channelImageUrl: item.video.channel.channelImageUrl,
+        },
+      },
+    }));
+
     const videoCount =
       await this.watchLaterRepo.countWatchLaterByUserId(userId);
-    return { items, videoCount };
+    return { items: newItems, videoCount };
   }
 
   async isVideoSaved(userId: string, videoId: string) {

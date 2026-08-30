@@ -4,7 +4,7 @@ export class PlaylistItemDto {
   @ApiProperty() videoId!: string;
   @ApiProperty() title!: string;
   @ApiProperty() thumbnailUrl!: string;
-  @ApiProperty() duration!: number;
+  @ApiProperty() durationSeconds!: number;
   @ApiProperty() views!: string;
   @ApiProperty() createdAt!: string;
   @ApiProperty() channelId!: string;

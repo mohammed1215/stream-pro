@@ -10,7 +10,7 @@ class VideoSummaryDto {
   @ApiProperty() id!: string;
   @ApiProperty() title!: string;
   @ApiProperty() thumbnailUrl!: string;
-  @ApiProperty() duration!: number;
+  @ApiProperty() durationSeconds!: number;
   @ApiProperty() views!: number;
   @ApiProperty({ type: ChannelSummaryDto }) channel!: ChannelSummaryDto;
 }

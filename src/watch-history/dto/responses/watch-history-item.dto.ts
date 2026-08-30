@@ -1,11 +1,11 @@
 // dto/watch-history-item.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 
-class VideoSummaryDto {
+export class VideoSummaryDto {
   @ApiProperty() id!: string;
   @ApiProperty() title!: string;
   @ApiProperty() thumbnailUrl!: string;
-  @ApiProperty() duration!: number;
+  @ApiProperty() durationSeconds!: number;
 }
 
 class ChannelSummaryDto {
