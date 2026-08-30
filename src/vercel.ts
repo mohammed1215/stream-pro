@@ -5,6 +5,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import express from 'express';
 import type { Request, Response } from 'express';
+import metadata from './metadata';
 
 declare global {
   interface BigInt {
@@ -40,7 +41,7 @@ async function createNestApp() {
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-
+  await SwaggerModule.loadPluginMetadata(metadata);
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document, {
     customSiteTitle: 'Your API Title',
