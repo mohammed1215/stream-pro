@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import metadata from './metadata';
+import cookie from 'cookie-parser';
 declare global {
   interface BigInt {
     toJSON(): string;
@@ -30,13 +31,19 @@ async function bootstrap() {
     )
     .setVersion('1.0')
     .addBearerAuth()
+    .addCookieAuth('refreshToken', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'refreshToken',
+    })
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
-
+  app.use(cookie());
   app.enableCors({
-    origin: '*',
+    origin: ['http://localhost:5173'],
+    credentials: true,
   });
 
   app.useGlobalPipes(

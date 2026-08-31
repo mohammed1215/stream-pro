@@ -40,6 +40,11 @@ async function createNestApp() {
     )
     .setVersion('1.0')
     .addBearerAuth()
+    .addCookieAuth('refreshToken', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'refreshToken',
+    })
     .build();
   await SwaggerModule.loadPluginMetadata(metadata);
   const document = SwaggerModule.createDocument(app, config);

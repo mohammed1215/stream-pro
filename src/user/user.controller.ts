@@ -9,19 +9,25 @@ import {
   Res,
   UseGuards,
   NotFoundException,
+  Req,
 } from '@nestjs/common';
 import { JwtUserPayload, UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { SuccessResponseShape } from '../user/dto/ResponseShape.dto';
-import { type Response } from 'express';
+import { Request, type Response } from 'express';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
 import { AuthGuard } from './guards/AuthGuard';
 import { User } from '../decorators/user-decorator';
 import { ProfileResponseDto } from './dto/profile-response.dto';
-import { ApiBearerAuth, ApiExtraModels, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiExtraModels,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ApiSuccessResponse } from '../decorators/api-success-response-decorator';
 import { GoogleLoginRequestDto } from './dto/google-login-request.dto';
 
@@ -45,7 +51,12 @@ export class UserController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<SuccessResponseShape<RegisterResponseDto>> {
     const data = await this.userService.register(createUserDto);
-    res.cookie('refreshToken', data.refreshToken, { httpOnly: true });
+    res.cookie('refreshToken', data.refreshToken, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+    });
     return new SuccessResponseShape<RegisterResponseDto>(data);
   }
 
@@ -56,7 +67,12 @@ export class UserController {
     @Body() loginDto: LoginRequestDto,
   ) {
     const data = await this.userService.login(loginDto);
-    res.cookie('refreshToken', data.refreshToken, { httpOnly: true });
+    res.cookie('refreshToken', data.refreshToken, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+    });
     return new SuccessResponseShape<LoginResponseDto>({
       accessToken: data.accessToken,
       user: {
@@ -74,7 +90,12 @@ export class UserController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const data = await this.userService.googleLogin(googleLoginDto.token);
-    res.cookie('refreshToken', data.refreshToken, { httpOnly: true });
+    res.cookie('refreshToken', data.refreshToken, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+    });
     return new SuccessResponseShape<LoginResponseDto>({
       accessToken: data.accessToken,
       user: {
@@ -119,8 +140,25 @@ export class UserController {
     res.clearCookie('refreshToken');
   }
 
+  @ApiCookieAuth('refreshToken')
   @Post('auth/refresh')
-  refreshToken(@Body() refreshToken: string) {
-    return this.userService.refreshToken(refreshToken);
+  async refreshToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const oldRefreshToken = req.cookies?.refreshToken as string | undefined;
+    console.log(oldRefreshToken);
+    if (!oldRefreshToken) {
+      throw new NotFoundException('Refresh token not found');
+    }
+    const { accessToken, refreshToken: newRefreshToken } =
+      await this.userService.refreshToken(oldRefreshToken);
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+    });
+    return { accessToken };
   }
 }
