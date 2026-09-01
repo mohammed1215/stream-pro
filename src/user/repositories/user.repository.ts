@@ -42,9 +42,6 @@ export class UserRepository {
         name: true,
         createdAt: true,
         updatedAt: true,
-        deviceId: true,
-        deviceToken: true,
-        deviceType: true,
       },
     });
   }
@@ -65,6 +62,18 @@ export class UserRepository {
     return this.prisma.user.update({
       where: { id },
       data,
+      select: {
+        id: true,
+        email: true,
+        avatarUrl: true,
+        name: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
+  }
+
+  async delete(userId: string) {
+    return this.prisma.user.delete({ where: { id: userId } });
   }
 }

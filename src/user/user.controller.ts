@@ -10,6 +10,11 @@ import {
   UseGuards,
   NotFoundException,
   Req,
+  UploadedFile,
+  UseInterceptors,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { JwtUserPayload, UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -30,6 +35,8 @@ import {
 } from '@nestjs/swagger';
 import { ApiSuccessResponse } from '../decorators/api-success-response-decorator';
 import { GoogleLoginRequestDto } from './dto/google-login-request.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('')
 @ApiTags('Auth & User')
@@ -136,8 +143,28 @@ export class UserController {
   }
 
   @Post('auth/logout')
-  logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('refreshToken');
+  logout(@Res({ passthrough: true }) res: Response, @Req() req: Request) {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+    const refreshToken = req.cookies['refreshToken'] as string | undefined;
+    return this.userService.logout(refreshToken);
+  }
+
+  @Post('auth/logout-all')
+  @UseGuards(AuthGuard)
+  logoutAll(
+    @User() user: JwtUserPayload,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+    return this.userService.logoutFromAllDevices(user.userId);
   }
 
   @ApiCookieAuth('refreshToken')
@@ -160,5 +187,39 @@ export class UserController {
       secure: process.env.NODE_ENV === 'production',
     });
     return { accessToken };
+  }
+
+  @Patch('profile/me')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('avatar'))
+  async updateProfile(
+    @User() user: JwtUserPayload,
+    @Body() updateUserDto: UpdateProfileDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        fileIsRequired: false,
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 3 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+        ],
+      }),
+    )
+    avatarFile?: Express.Multer.File,
+  ) {
+    const updatedProfile = await this.userService.updateProfile(
+      user.userId,
+      updateUserDto,
+      avatarFile,
+    );
+    return new SuccessResponseShape<ProfileResponseDto>(updatedProfile);
+  }
+
+  @Delete('profile/me')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  async deleteAccount(@User() user: JwtUserPayload) {
+    await this.userService.deleteAccount(user.userId);
+    return { message: 'Account deleted successfully' };
   }
 }

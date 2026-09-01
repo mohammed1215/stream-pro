@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import express from 'express';
 import type { Request, Response } from 'express';
 import metadata from './metadata';
+import { PrismaClientExceptionFilter } from './prisma-client-exception.filter';
 
 declare global {
   interface BigInt {
@@ -24,6 +25,8 @@ async function createNestApp() {
     AppModule,
     new ExpressAdapter(expressApp),
   );
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
 
   app.setGlobalPrefix('api');
 

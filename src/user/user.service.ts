@@ -16,6 +16,8 @@ import { OAuth2Client } from 'google-auth-library';
 import { AuthProvider, DeviceType } from '../generated/prisma/enums';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 import * as crypto from 'crypto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UserService {
@@ -26,6 +28,7 @@ export class UserService {
     private readonly config: ConfigService,
     private readonly firebaseService: FirebaseService,
     private readonly refreshTokenRepo: RefreshTokenRepository,
+    private readonly cloudinaryService: CloudinaryService,
   ) {
     this.googleClient = new OAuth2Client(
       config.get('GOOGLE_CLIENT_ID'),
@@ -225,6 +228,40 @@ export class UserService {
     );
 
     return { accessToken, refreshToken: newRefreshToken };
+  }
+
+  async logout(refreshToken?: string) {
+    if (!refreshToken)
+      throw new UnauthorizedException('Refresh token not found');
+    const tokenHash = this.hashToken(refreshToken);
+    return this.refreshTokenRepo.revoke(tokenHash);
+  }
+
+  async logoutFromAllDevices(userId: string) {
+    return this.refreshTokenRepo.revokeAllForUser(userId);
+  }
+
+  async updateProfile(
+    userId: string,
+    updateUserDto: UpdateProfileDto,
+    avatarFile?: Express.Multer.File,
+  ) {
+    let avatarUrl: string | undefined = undefined;
+    if (avatarFile) {
+      const existingUser = await this.userRepo.findById(userId);
+      avatarUrl = await this.cloudinaryService.uploadImage(avatarFile);
+      if (existingUser?.avatarUrl) {
+        this.cloudinaryService
+          .removeImage(existingUser.avatarUrl)
+          .catch(() => {});
+      }
+    }
+    return this.userRepo.update(userId, { ...updateUserDto, avatarUrl });
+  }
+
+  async deleteAccount(userId: string) {
+    await this.refreshTokenRepo.revokeAllForUser(userId);
+    return this.userRepo.delete(userId);
   }
 
   private hashToken(token: string) {

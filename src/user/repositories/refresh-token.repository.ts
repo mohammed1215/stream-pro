@@ -90,7 +90,7 @@ export class RefreshTokenRepository {
   }
 
   async revoke(tokenHash: string): Promise<void> {
-    await this.prisma.refreshToken.update({
+    await this.prisma.refreshToken.updateMany({
       where: { tokenHash },
       data: { isRevoked: true },
     });
@@ -98,7 +98,7 @@ export class RefreshTokenRepository {
 
   async revokeAllForUser(userId: string): Promise<void> {
     await this.prisma.refreshToken.updateMany({
-      where: { userId },
+      where: { userId, isRevoked: false },
       data: { isRevoked: true },
     });
   }
