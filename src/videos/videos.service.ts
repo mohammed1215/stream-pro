@@ -347,7 +347,7 @@ export class VideosService {
       throw new BadRequestException('video does not belong to the channel');
     }
 
-    if (video.id !== uploadCompletedDto.publicId) {
+    if (video.id !== uploadCompletedDto.publicId.split('/').at(-1)) {
       throw new BadRequestException('video id does not match public id');
     }
 
