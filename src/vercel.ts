@@ -51,6 +51,7 @@ async function createNestApp() {
     .build();
   await SwaggerModule.loadPluginMetadata(metadata);
   const document = SwaggerModule.createDocument(app, config);
+
   SwaggerModule.setup('api/docs', app, document, {
     customSiteTitle: 'Your API Title',
     customCssUrl:
@@ -62,7 +63,8 @@ async function createNestApp() {
   });
 
   app.enableCors({
-    origin: '*',
+    origin: ['http://localhost:5173'],
+    credentials: true,
   });
 
   app.useGlobalPipes(
