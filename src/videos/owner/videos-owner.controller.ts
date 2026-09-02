@@ -11,6 +11,9 @@ import {
   Patch,
   Post,
   Query,
+  RawBodyRequest,
+  Req,
+  UnauthorizedException,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -183,6 +186,28 @@ export class VideosOwnerController {
   ) {
     const folder = `videos/${channel.id}`;
     return this.videosService.getUploadSignature(channel.id, videoId, folder);
+  }
+
+  @Post('video-upload-webhook')
+  async updateVideoStatus(@Req() req: RawBodyRequest<Request>) {
+    const timestamp = req.headers['x-cld-timestamp'];
+    const signature = req.headers['x-cld-signature'];
+    if (!timestamp || !signature) {
+      throw new BadRequestException('Missing required headers');
+    }
+    const isValid = this.videosService.verifyNotificationSignature(
+      req.rawBody,
+      Number(timestamp),
+      signature as string,
+    );
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid signature');
+    }
+
+    const payload = JSON.parse(req.rawBody!.toString());
+    await this.videosService.handleUploadNotification(payload);
+    return;
   }
 
   @Get(':videoId')
