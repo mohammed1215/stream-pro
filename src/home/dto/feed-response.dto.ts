@@ -1,7 +1,7 @@
 export class VideoFeedItem {
   id: string;
   title: string;
-  thumbnailUrl: string;
+  thumbnailUrl: string | null;
   durationSeconds: number;
   views: number;
   createdAt: Date;
@@ -22,7 +22,7 @@ export class VideoFeedItem {
   }: {
     id: string;
     title: string;
-    thumbnailUrl: string;
+    thumbnailUrl: string | null;
     durationSeconds: number;
     views: number;
     createdAt: Date;

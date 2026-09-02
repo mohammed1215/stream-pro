@@ -4,7 +4,7 @@ export class VideoOfPlaylistResponseDto {
   @ApiProperty() videoId: string;
   @ApiProperty() title: string;
   @ApiProperty() description: string;
-  @ApiProperty() thumbnailUrl: string;
+  @ApiProperty() thumbnailUrl: string | null;
   @ApiProperty() indexOfVideo: number;
   @ApiProperty() playlistId: string;
   @ApiProperty() createdAt: Date;
@@ -14,7 +14,7 @@ export class VideoOfPlaylistResponseDto {
     videoId: string,
     title: string,
     description: string,
-    thumbnailUrl: string,
+    thumbnailUrl: string | null,
     indexOfVideo: number,
     playlistId: string,
     createdAt: Date,

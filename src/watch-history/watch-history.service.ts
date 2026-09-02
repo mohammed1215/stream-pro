@@ -15,7 +15,7 @@ export interface WatchHistoryItem {
     id: string;
     title: string;
     durationSeconds: number;
-    thumbnailUrl: string;
+    thumbnailUrl: string | null;
   };
   watchedSeconds: number;
   videoDuration: number;
