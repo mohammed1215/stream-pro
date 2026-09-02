@@ -5,7 +5,7 @@ export class VideoOwnerResponseDto {
   @ApiProperty() title: string;
   @ApiProperty() videoUrl: string | null;
   @ApiProperty() hlsUrl: string | null;
-  @ApiProperty() thumbnailUrl: string;
+  @ApiProperty({ nullable: true }) thumbnailUrl: string | null;
   @ApiProperty() channelId: string;
   @ApiProperty() channelTitle: string;
   @ApiProperty() channelImageUrl: string | null;
@@ -20,7 +20,7 @@ export class VideoOwnerResponseDto {
     title: string,
     videoUrl: string | null,
     hlsUrl: string | null,
-    thumbnailUrl: string,
+    thumbnailUrl: string | null,
     channelId: string,
     channelTitle: string,
     channelImageUrl: string | null,

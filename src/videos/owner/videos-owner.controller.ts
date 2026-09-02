@@ -11,9 +11,6 @@ import {
   Patch,
   Post,
   Query,
-  RawBodyRequest,
-  Req,
-  UnauthorizedException,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -48,6 +45,7 @@ import { JwtUserPayload } from '../../user/user.service';
 import { User } from '../../decorators/user-decorator';
 import { VideoDetailsOwnerResponseDto } from '../dto/responses/owner/get-video-details.dto';
 import { memoryStorage } from 'multer';
+import { UploadCompletedDto } from '../dto/upload-completed.dto';
 
 const videoUploadStorage = memoryStorage();
 
@@ -83,31 +81,14 @@ export class VideosOwnerController {
   @Post()
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(
-    FileFieldsInterceptor([{ name: 'thumbnail' }, { name: 'video' }], {
-      storage: videoUploadStorage,
-    }),
-    ChannelPreloadInterceptor,
-  )
+  @UseInterceptors(ChannelPreloadInterceptor)
   async create(
     @Body() createVideoDto: CreateVideoDto,
     @Channel() channel: ChannelRequestData,
-    @UploadedFiles()
-    files: { video?: Express.Multer.File[]; thumbnail?: Express.Multer.File[] },
   ) {
-    if (
-      !files.video ||
-      !files.video.length ||
-      !files.thumbnail ||
-      !files.thumbnail[0]
-    ) {
-      throw new BadRequestException('video and thumbnail files are required');
-    }
     const { duration, ...videoServiceData } = await this.videosService.create(
       channel.id,
       createVideoDto,
-      files.video[0],
-      files.thumbnail[0],
     );
     return new SuccessResponseShape({
       ...videoServiceData,
@@ -438,32 +419,15 @@ export class VideosOwnerController {
     return new SuccessResponseShape(videoServiceData);
   }
 
-  // @Post('upload-completed')
-  // @UseGuards(AuthGuard)
-  // @ApiBearerAuth()
-  // async uploadCompleted(){
-
-  // }
-
-  @Post('video-upload-webhook')
-  async updateVideoStatus(@Req() req: RawBodyRequest<Request>) {
-    const timestamp = req.headers['x-cld-timestamp'];
-    const signature = req.headers['x-cld-signature'];
-    if (!timestamp || !signature) {
-      throw new BadRequestException('Missing required headers');
-    }
-    const isValid = this.videosService.verifyNotificationSignature(
-      req.rawBody,
-      Number(timestamp),
-      signature as string,
-    );
-
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid signature');
-    }
-
-    const payload = JSON.parse(req.rawBody!.toString());
-    await this.videosService.handleUploadNotification(payload);
-    return;
+  @Post('upload-completed')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(ChannelPreloadInterceptor)
+  async uploadCompleted(
+    @Body()
+    uploadCompletedDto: UploadCompletedDto,
+    @Channel() channel: ChannelRequestData,
+  ) {
+    return this.videosService.uploadCompleted(channel.id, uploadCompletedDto);
   }
 }

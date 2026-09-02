@@ -90,10 +90,10 @@ model Video {
   description  String
   videoUrl     String?
   hlsUrl       String?
-  duration     Int
-  size         Float
+  duration     Int     @default(0)
+  size         Float   @default(0)
   isPublished  Boolean @default(false)
-  thumbnailUrl String
+  thumbnailUrl String?
   views        Int     @default(0)
 
   createdAt DateTime @default(now())

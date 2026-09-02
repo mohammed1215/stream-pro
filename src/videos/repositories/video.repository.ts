@@ -10,26 +10,18 @@ import { Prisma } from '../../generated/prisma/client';
 import { SortByVideo } from '../dto/video-query.dto';
 import { VideoOrderByWithAggregationInput } from '../../generated/prisma/models';
 import { VideoSortByEnum, VideoStatusEnum } from '../enum/enums';
+import { UploadCompletedDto } from '../dto/upload-completed.dto';
 
 @Injectable()
 export class VideoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    createVideoDto: CreateVideoDto,
-    duration: number,
-    size: number,
-    thumbnailUrl: string,
-    videoUrl: string,
-    channelId: string,
-  ) {
+  async create(createVideoDto: CreateVideoDto, channelId: string) {
     const video = await this.prisma.video.create({
       data: {
         ...createVideoDto,
-        duration,
-        size,
-        thumbnailUrl,
-        videoUrl,
+        duration: 0,
+        size: 0,
         channelId,
       },
       select: {
@@ -360,6 +352,13 @@ export class VideoRepository {
     return this.prisma.video.update({
       where: { id: publicId },
       data: { status, hlsUrl },
+    });
+  }
+
+  uploadCompleted(videoId: string, { duration, bytes }: UploadCompletedDto) {
+    return this.prisma.video.update({
+      where: { id: videoId },
+      data: { duration, size: bytes },
     });
   }
 }

@@ -15,6 +15,7 @@ import { Prisma, VideoStatus } from '../generated/prisma/client';
 import { SortByVideo } from './dto/video-query.dto';
 import { buildPaginationMeta } from '../utils/pagination.util';
 import { VideoSortByEnum, VideoStatusEnum } from './enum/enums';
+import { UploadCompletedDto } from './dto/upload-completed.dto';
 
 // Single source of truth for the "owner details, enriched with this
 // user's like/subscription state" return type, derived directly from
@@ -31,31 +32,8 @@ export class VideosService {
     private readonly videoProcessingService: VideoProcessingService,
   ) {}
 
-  async create(
-    channelId: string,
-    createVideoDto: CreateVideoDto,
-    videoFile?: Express.Multer.File,
-    thumbnailFile?: Express.Multer.File,
-  ) {
-    if (!videoFile || !thumbnailFile) {
-      throw new BadRequestException('video and thumbnail files are required');
-    }
-
-    const durationSeconds =
-      await this.videoProcessingService.getVideoDurationUsingStream(videoFile);
-    console.log('Video duration: ', durationSeconds);
-    const secureVideoUrl = await this.cloudinaryService.uploadVideo(videoFile);
-    const secureThumbnailUrl =
-      await this.cloudinaryService.uploadImage(thumbnailFile);
-
-    return this.videoRepo.create(
-      createVideoDto,
-      durationSeconds ?? 0,
-      videoFile.size,
-      secureThumbnailUrl,
-      secureVideoUrl,
-      channelId,
-    );
+  async create(channelId: string, createVideoDto: CreateVideoDto) {
+    return this.videoRepo.create(createVideoDto, channelId);
   }
 
   getAllVideosOfChannel(
@@ -342,6 +320,40 @@ export class VideosService {
       publicId: payload.public_id,
       status,
       hlsUrl: status === VideoStatus.READY ? hlsResult?.secure_url : null,
+    });
+  }
+  async uploadCompleted(
+    channelId: string,
+    uploadCompletedDto: UploadCompletedDto,
+  ) {
+    // check if signature is valid
+    const result = this.cloudinaryService.verifyUploadResponseSignature({
+      signature: uploadCompletedDto.signature,
+      public_id: uploadCompletedDto.publicId,
+      version: uploadCompletedDto.version,
+    });
+
+    if (!result) {
+      throw new BadRequestException('invalid signature');
+    }
+
+    // check if video exists and belongs to the channel
+    const video = await this.videoRepo.findById(uploadCompletedDto.videoId);
+    if (!video) {
+      throw new NotFoundException('video not found');
+    }
+
+    if (video.channelId !== channelId) {
+      throw new BadRequestException('video does not belong to the channel');
+    }
+
+    if (video.id !== uploadCompletedDto.publicId) {
+      throw new BadRequestException('video id does not match public id');
+    }
+
+    return this.videoRepo.uploadCompleted(uploadCompletedDto.videoId, {
+      ...uploadCompletedDto,
+      duration: Math.trunc(uploadCompletedDto.duration),
     });
   }
 }

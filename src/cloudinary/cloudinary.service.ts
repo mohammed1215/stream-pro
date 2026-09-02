@@ -170,4 +170,17 @@ export class CloudinaryService implements OnModuleInit {
       Number(cloudinaryConfig.api_secret ?? ''),
     );
   }
+
+  verifyUploadResponseSignature(payload: {
+    signature: string;
+    public_id: string;
+    version: number;
+  }) {
+    const expectedSignature = v2.utils.api_sign_request(
+      { public_id: payload.public_id, version: payload.version },
+      cloudinaryConfig.api_secret ?? '',
+    );
+
+    return expectedSignature === payload.signature;
+  }
 }
