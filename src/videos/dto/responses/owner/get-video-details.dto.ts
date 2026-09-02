@@ -4,6 +4,7 @@ export class VideoDetailsOwnerResponseDto {
   @ApiProperty() videoId!: string;
   @ApiProperty() title!: string;
   @ApiProperty() videoUrl!: string;
+  @ApiProperty() hlsUrl!: string;
   @ApiProperty({ nullable: true, type: 'string' }) thumbnailUrl!: string | null;
   @ApiProperty() channelId!: string;
   @ApiProperty() channelTitle!: string;

@@ -117,6 +117,7 @@ export class VideoRepository {
           createdAt: true,
           updatedAt: true,
           videoUrl: true,
+          hlsUrl: true,
           thumbnailUrl: true,
           likes: {
             where: { userId },
@@ -186,6 +187,7 @@ export class VideoRepository {
         duration: true,
         updatedAt: true,
         videoUrl: true,
+        hlsUrl: true,
         thumbnailUrl: true,
         isPublished: true,
         createdAt: true,
@@ -344,5 +346,20 @@ export class VideoRepository {
       default:
         return { updatedAt: 'asc' };
     }
+  }
+
+  handleUploadNotification({
+    publicId,
+    status,
+    hlsUrl,
+  }: {
+    publicId: string;
+    status: string;
+    hlsUrl: string | null;
+  }) {
+    return this.prisma.video.update({
+      where: { id: publicId },
+      data: { status, hlsUrl },
+    });
   }
 }

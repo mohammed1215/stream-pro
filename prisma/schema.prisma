@@ -85,18 +85,22 @@ model Channel {
 }
 
 model Video {
-  id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   title        String
   description  String
-  videoUrl     String
+  videoUrl     String?
+  hlsUrl       String?
   duration     Int
   size         Float
-  isPublished  Boolean  @default(false)
+  isPublished  Boolean @default(false)
   thumbnailUrl String
-  views        Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now()) @updatedAt
-  isDeleted    Boolean  @default(false)
+  views        Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  isDeleted Boolean  @default(false)
+
+  videoStatus VideoStatus @default(PROCESSING)
 
   channelId      String
   channel        Channel         @relation(references: [id], fields: [channelId], onDelete: Cascade)
@@ -105,6 +109,13 @@ model Video {
   watchLaters    WatchLater[]
   playlistVideos PlaylistVideo[]
   watchHistories WatchHistory[]
+}
+
+enum VideoStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
 }
 
 model Comment {

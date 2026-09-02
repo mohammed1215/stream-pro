@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { v2 } from 'cloudinary';
 import { cloudinaryConfig } from './cloudinary.config';
-import { createReadStream } from 'fs';
 import { Readable } from 'stream';
 
 @Injectable()
@@ -123,6 +122,52 @@ export class CloudinaryService implements OnModuleInit {
 
         return result;
       },
+    );
+  }
+
+  getUploadSignature(publicId: string, folder: string) {
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    const eager = [{ streaming_profile: 'full_hd', format: 'm3u8' }];
+    const eagerString = (v2.utils as any).build_eager(eager);
+    const eagerNotificationUrl = cloudinaryConfig.eagerNotificationUrl;
+
+    const paramsToSign = {
+      timestamp,
+      folder,
+      eager: eagerString,
+      eager_async: true,
+      eager_notification_url: eagerNotificationUrl,
+      public_id: publicId,
+    };
+
+    const signature = v2.utils.api_sign_request(
+      paramsToSign,
+      cloudinaryConfig.api_secret ?? '',
+    );
+
+    return {
+      signature,
+      timestamp,
+      apiKey: cloudinaryConfig.api_key,
+      folder,
+      eager: eagerString,
+      eagerNotificationUrl,
+      eagerAsync: true,
+      uploadUrl: `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloud_name ?? ''}/video/upload`,
+    };
+  }
+
+  verifyNotificationSignature(
+    rawBody: any,
+    timestamp: number,
+    signature: string,
+  ) {
+    return v2.utils.verifyNotificationSignature(
+      rawBody!.toString(),
+      timestamp,
+      signature,
+      Number(cloudinaryConfig.api_secret ?? ''),
     );
   }
 }

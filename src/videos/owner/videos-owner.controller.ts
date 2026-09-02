@@ -11,6 +11,9 @@ import {
   Patch,
   Post,
   Query,
+  RawBodyRequest,
+  Req,
+  UnauthorizedException,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -168,6 +171,7 @@ export class VideosOwnerController {
         video.id,
         video.title,
         video.videoUrl,
+        video.hlsUrl,
         video.thumbnailUrl,
         video.channel.id,
         video.channel.title,
@@ -185,6 +189,19 @@ export class VideosOwnerController {
       pageSize: limit,
       ...rest,
     });
+  }
+
+  @Get('upload-signature')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(ChannelPreloadInterceptor)
+  @ApiOperation({ summary: 'get upload signature for video upload' })
+  uploadSignature(
+    @Channel() channel: ChannelRequestData,
+    @Body('videoId') videoId: string,
+  ) {
+    const folder = `videos/${channel.id}`;
+    return this.videosService.getUploadSignature(channel.id, videoId, folder);
   }
 
   @Get(':videoId')
@@ -237,6 +254,7 @@ export class VideosOwnerController {
       videoServiceData.title,
       videoServiceData.description,
       videoServiceData.videoUrl,
+      videoServiceData.hlsUrl,
       videoServiceData.thumbnailUrl,
       videoServiceData.channel.id,
       videoServiceData.channel.title,
@@ -418,5 +436,34 @@ export class VideosOwnerController {
       channel.id,
     );
     return new SuccessResponseShape(videoServiceData);
+  }
+
+  // @Post('upload-completed')
+  // @UseGuards(AuthGuard)
+  // @ApiBearerAuth()
+  // async uploadCompleted(){
+
+  // }
+
+  @Post('video-upload-webhook')
+  async updateVideoStatus(@Req() req: RawBodyRequest<Request>) {
+    const timestamp = req.headers['x-cld-timestamp'];
+    const signature = req.headers['x-cld-signature'];
+    if (!timestamp || !signature) {
+      throw new BadRequestException('Missing required headers');
+    }
+    const isValid = this.videosService.verifyNotificationSignature(
+      req.rawBody,
+      Number(timestamp),
+      signature as string,
+    );
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid signature');
+    }
+
+    const payload = JSON.parse(req.rawBody!.toString());
+    await this.videosService.handleUploadNotification(payload);
+    return;
   }
 }

@@ -8,6 +8,7 @@ export const VIDEO_DETAILS_SELECT_WITH_SUBSCRIPTIONS_OF_CHANNEL = {
   duration: true,
   updatedAt: true,
   videoUrl: true,
+  hlsUrl: true,
   thumbnailUrl: true,
   channel: {
     select: {
@@ -33,6 +34,7 @@ export const VIDEO_DETAILS_SELECT = {
   duration: true,
   updatedAt: true,
   videoUrl: true,
+  hlsUrl: true,
   createdAt: true,
   thumbnailUrl: true,
   channel: {
@@ -57,6 +59,8 @@ export const VIDEO_DETAILS_OWNER_SELECT = {
   duration: true,
   updatedAt: true,
   videoUrl: true,
+  hlsUrl: true,
+
   thumbnailUrl: true,
   createdAt: true,
   _count: true,
@@ -95,6 +99,7 @@ export const VIDEO_LIST_SELECT = {
   views: true,
   duration: true,
   videoUrl: true,
+  hlsUrl: true,
   createdAt: true,
   thumbnailUrl: true,
   channel: { select: { id: true, title: true, channelImageUrl: true } },
@@ -108,6 +113,7 @@ export const VIDEO_LIST_OWNER_SELECT = {
   views: true,
   duration: true,
   videoUrl: true,
+  hlsUrl: true,
   thumbnailUrl: true,
   isPublished: true,
   description: true,

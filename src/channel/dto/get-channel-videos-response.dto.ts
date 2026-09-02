@@ -2,29 +2,20 @@ export class ChannelVideoResponseDto {
   videoId: string;
   videoTitle: string;
   videoDescription: string | null;
-  videoUrl: string;
+  videoUrl: string | null;
+  hlsUrl: string | null;
   thumbnailUrl: string | null;
   views: number;
   createdAt: Date;
   updatedAt: Date;
   isLikedByUser: boolean;
   isInWatchLater: boolean;
-  constructor(video: {
-    videoId: string;
-    videoTitle: string;
-    videoDescription: string | null;
-    videoUrl: string;
-    thumbnailUrl: string | null;
-    views: number;
-    createdAt: Date;
-    updatedAt: Date;
-    isLikedByUser: boolean;
-    isInWatchLater: boolean;
-  }) {
+  constructor(video: ChannelVideoResponseDto) {
     this.videoId = video.videoId;
     this.videoTitle = video.videoTitle;
     this.videoDescription = video.videoDescription;
     this.videoUrl = video.videoUrl;
+    this.hlsUrl = video.hlsUrl;
     this.thumbnailUrl = video.thumbnailUrl;
     this.views = video.views;
     this.createdAt = video.createdAt;

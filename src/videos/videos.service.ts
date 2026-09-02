@@ -11,7 +11,7 @@ import fs from 'fs';
 import { UpdateVideoDto } from './dto/update-video.dto';
 
 import { videoDetailsOwnerSelectFor } from './repositories/video-select';
-import { Prisma } from '../generated/prisma/client';
+import { Prisma, VideoStatus } from '../generated/prisma/client';
 import { SortByVideo } from './dto/video-query.dto';
 import { buildPaginationMeta } from '../utils/pagination.util';
 import { VideoSortByEnum, VideoStatusEnum } from './enum/enums';
@@ -106,6 +106,7 @@ export class VideosService {
       title: videoData.title,
       description: videoData.description,
       videoUrl: videoData.videoUrl,
+      hlsUrl: videoData.hlsUrl,
       thumbnailUrl: videoData.thumbnailUrl,
       channelId: videoData.channel.id,
       channelTitle: videoData.channel.title,
@@ -298,5 +299,49 @@ export class VideosService {
     }
 
     return newVideo;
+  }
+
+  getUploadSignature(channelId: string, videoId: string, folder: string) {
+    const data = this.cloudinaryService.getUploadSignature(videoId, folder);
+    return {
+      ...data,
+    };
+  }
+
+  verifyNotificationSignature(
+    rawBody: any,
+    timestamp: number,
+    signature: string,
+  ) {
+    return this.cloudinaryService.verifyNotificationSignature(
+      rawBody,
+      timestamp,
+      signature,
+    );
+  }
+
+  async handleUploadNotification(payload: any) {
+    if (payload.notification_type !== 'eager') {
+      return;
+    }
+
+    const hlsResult = payload.eager?.[0];
+
+    const isStillProcessing = hlsResult?.status === 'processing';
+    const hasFailed = hlsResult?.status === 'failed' || hlsResult?.error;
+    let status: VideoStatus;
+
+    if (isStillProcessing) {
+      status = VideoStatus.PROCESSING;
+    } else if (hasFailed || !hlsResult?.secure_url) {
+      status = VideoStatus.FAILED;
+    } else {
+      status = VideoStatus.READY;
+    }
+    return this.videoRepo.handleUploadNotification({
+      publicId: payload.public_id,
+      status,
+      hlsUrl: status === VideoStatus.READY ? hlsResult?.secure_url : null,
+    });
   }
 }
