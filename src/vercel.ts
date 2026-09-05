@@ -24,6 +24,7 @@ async function createNestApp() {
   const app = await NestFactory.create(
     AppModule,
     new ExpressAdapter(expressApp),
+    { rawBody: true },
   );
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
