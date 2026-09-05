@@ -49,6 +49,7 @@ import { User } from '../../decorators/user-decorator';
 import { VideoDetailsOwnerResponseDto } from '../dto/responses/owner/get-video-details.dto';
 import { memoryStorage } from 'multer';
 import { UploadCompletedDto } from '../dto/upload-completed.dto';
+import { UploadCompletedResponseDto } from '../dto/responses/owner/upload-completed.dto';
 
 const videoUploadStorage = memoryStorage();
 
@@ -448,6 +449,11 @@ export class VideosOwnerController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @UseInterceptors(ChannelPreloadInterceptor)
+  @ApiResponse({
+    status: 201,
+    description: 'Video upload completed successfully',
+    type: UploadCompletedResponseDto,
+  })
   async uploadCompleted(
     @Body()
     uploadCompletedDto: UploadCompletedDto,
