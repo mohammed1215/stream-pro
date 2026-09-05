@@ -173,7 +173,7 @@ export class CloudinaryService implements OnModuleInit {
       rawBody!.toString(),
       timestamp,
       signature,
-      Number(cloudinaryConfig.api_secret ?? ''),
+      7200,
     );
   }
 
