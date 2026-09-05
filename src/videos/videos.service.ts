@@ -307,28 +307,36 @@ export class VideosService {
   }
 
   async handleUploadNotification(payload: any) {
-    if (payload.notification_type !== 'eager') {
-      return;
-    }
+    if (payload.notification_type !== 'eager') return;
+
+    const videoId = payload.public_id?.split('/').at(-1);
+    if (!videoId) return;
 
     const hlsResult = payload.eager?.[0];
-
     const isStillProcessing = hlsResult?.status === 'processing';
     const hasFailed = hlsResult?.status === 'failed' || hlsResult?.error;
     let status: VideoStatus;
 
-    if (isStillProcessing) {
-      status = VideoStatus.PROCESSING;
-    } else if (hasFailed || !hlsResult?.secure_url) {
-      status = VideoStatus.FAILED;
-    } else {
-      status = VideoStatus.READY;
+    if (isStillProcessing) status = VideoStatus.PROCESSING;
+    else if (hasFailed || !hlsResult?.secure_url) status = VideoStatus.FAILED;
+    else status = VideoStatus.READY;
+
+    try {
+      return await this.videoRepo.handleUploadNotification({
+        publicId: videoId,
+        status,
+        hlsUrl: status === VideoStatus.READY ? hlsResult?.secure_url : null,
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2025'
+      ) {
+        console.warn(`Webhook: video ${videoId} not found`);
+        return;
+      }
+      throw err;
     }
-    return this.videoRepo.handleUploadNotification({
-      publicId: payload.public_id,
-      status,
-      hlsUrl: status === VideoStatus.READY ? hlsResult?.secure_url : null,
-    });
   }
   async uploadCompleted(
     channelId: string,

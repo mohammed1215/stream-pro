@@ -81,48 +81,54 @@ export class CloudinaryService implements OnModuleInit {
       Readable.from(video.buffer).pipe(stream);
     });
   }
-  removeImage(imageUrl: string) {
+  removeImage(imageUrl: string): Promise<any> {
     const publicId = imageUrl.split('/').pop()?.split('.')[0];
     if (!publicId) {
-      throw new BadRequestException('Invalid image URL');
+      return Promise.reject(new BadRequestException('Invalid image URL'));
     }
 
-    return v2.uploader.destroy(
-      publicId,
-      { resource_type: 'image' },
-      (err, result) => {
-        if (err) {
-          console.error(err);
-          throw new InternalServerErrorException(
-            'error while removing the image',
-          );
-        }
-
-        return result;
-      },
-    );
+    return new Promise((resolve, reject) => {
+      v2.uploader.destroy(
+        publicId,
+        { resource_type: 'image' },
+        (err, result) => {
+          if (err) {
+            console.error(err);
+            return reject(
+              new InternalServerErrorException(
+                'error while removing the image',
+              ),
+            );
+          }
+          resolve(result);
+        },
+      );
+    });
   }
 
-  removeVideo(videoUrl: string) {
+  removeVideo(videoUrl: string): Promise<any> {
     const publicId = videoUrl.split('/').pop()?.split('.')[0];
     if (!publicId) {
-      throw new BadRequestException('Invalid video URL');
+      return Promise.reject(new BadRequestException('Invalid video URL'));
     }
 
-    return v2.uploader.destroy(
-      publicId,
-      { resource_type: 'video' },
-      (err, result) => {
-        if (err) {
-          console.error(err);
-          throw new InternalServerErrorException(
-            'error while removing the video',
-          );
-        }
-
-        return result;
-      },
-    );
+    return new Promise((resolve, reject) => {
+      v2.uploader.destroy(
+        publicId,
+        { resource_type: 'video' },
+        (err, result) => {
+          if (err) {
+            console.error(err);
+            return reject(
+              new InternalServerErrorException(
+                'error while removing the video',
+              ),
+            );
+          }
+          resolve(result);
+        },
+      );
+    });
   }
 
   getUploadSignature(publicId: string, folder: string) {
