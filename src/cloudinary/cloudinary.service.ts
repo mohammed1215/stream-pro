@@ -169,12 +169,17 @@ export class CloudinaryService implements OnModuleInit {
     timestamp: number,
     signature: string,
   ) {
-    return v2.utils.verifyNotificationSignature(
+    const secret = cloudinaryConfig.api_secret ?? '';
+    console.log('secret length:', secret.length);
+    console.log('received signature:', signature);
+    const result = v2.utils.verifyNotificationSignature(
       rawBody!.toString(),
       timestamp,
       signature,
       7200,
     );
+    console.log('verification result:', result);
+    return result;
   }
 
   verifyUploadResponseSignature(payload: {
