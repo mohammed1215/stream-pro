@@ -50,7 +50,7 @@ import { VideoDetailsOwnerResponseDto } from '../dto/responses/owner/get-video-d
 import { memoryStorage } from 'multer';
 import { UploadCompletedDto } from '../dto/upload-completed.dto';
 import { UploadCompletedResponseDto } from '../dto/responses/owner/upload-completed.dto';
-import {UploadSignatureResponseDto} from '../dto/responses/owner/upload-signature-response.dto'
+import { UploadSignatureResponseDto } from '../dto/responses/owner/upload-signature-response.dto';
 const videoUploadStorage = memoryStorage();
 
 @ApiTags('Owner-Videos')
@@ -181,7 +181,14 @@ export class VideosOwnerController {
   @ApiBearerAuth()
   @UseInterceptors(ChannelPreloadInterceptor)
   @ApiOperation({ summary: 'get upload signature for video upload' })
-  @ApiResponse({type: UploadSignatureResponseDto})
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { videoId: { type: 'string' } },
+      required: ['videoId'],
+    },
+  })
+  @ApiResponse({ type: UploadSignatureResponseDto })
   uploadSignature(
     @Channel() channel: ChannelRequestData,
     @Body('videoId') videoId: string,
