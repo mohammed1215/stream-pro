@@ -33,7 +33,7 @@ export class SignatureDataSummary {
 }
 
 export class CreateVideoResponseDto {
-  @ApiProperty({ example: 'vid_9876543211' })
+  @ApiProperty({ example: 'vid_987654321' })
   videoId!: string;
 
   @ApiProperty({ type: () => SignatureDataSummary })
