@@ -6,7 +6,7 @@ import {
   VIDEO_LIST_OWNER_SELECT,
   VIDEO_LIST_SELECT,
 } from './video-select';
-import { Prisma } from '../../generated/prisma/client';
+import { Prisma, VideoStatus } from '../../generated/prisma/client';
 import { SortByVideo } from '../dto/video-query.dto';
 import { VideoOrderByWithAggregationInput } from '../../generated/prisma/models';
 import { VideoSortByEnum, VideoStatusEnum } from '../enum/enums';
@@ -346,12 +346,12 @@ export class VideoRepository {
     hlsUrl,
   }: {
     publicId: string;
-    status: string;
+    status: VideoStatus;
     hlsUrl: string | null;
   }) {
     return this.prisma.video.update({
       where: { id: publicId },
-      data: { status, hlsUrl },
+      data: { videoStatus: status, hlsUrl },
     });
   }
 

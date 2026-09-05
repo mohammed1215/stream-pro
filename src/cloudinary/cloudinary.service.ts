@@ -178,7 +178,7 @@ export class CloudinaryService implements OnModuleInit {
       .update(stringToSign)
       .digest('hex');
 
-    console.log(rawBody);
+    console.log(bodyString);
 
     console.log('--- DEBUG ---');
     console.log('body length:', bodyString.length);
