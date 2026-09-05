@@ -7,7 +7,7 @@ import {
 import { v2 } from 'cloudinary';
 import { cloudinaryConfig } from './cloudinary.config';
 import { Readable } from 'stream';
-
+import * as crypto from 'crypto';
 @Injectable()
 export class CloudinaryService implements OnModuleInit {
   constructor() {}
@@ -170,15 +170,40 @@ export class CloudinaryService implements OnModuleInit {
     signature: string,
   ) {
     const secret = cloudinaryConfig.api_secret ?? '';
-    console.log('secret length:', secret.length);
+    const bodyString = rawBody!.toString();
+
+    const stringToSign = bodyString + timestamp + secret;
+    const expectedSignature = crypto
+      .createHash('sha1')
+      .update(stringToSign)
+      .digest('hex');
+
+    console.log(rawBody);
+
+    console.log('--- DEBUG ---');
+    console.log('body length:', bodyString.length);
+    console.log('body first 100 chars:', bodyString.substring(0, 100));
+    console.log(
+      'body last 50 chars:',
+      bodyString.substring(bodyString.length - 50),
+    );
+    console.log('timestamp used:', timestamp);
+    console.log('current server time:', Math.floor(Date.now() / 1000));
+    console.log(
+      'time diff (seconds):',
+      Math.floor(Date.now() / 1000) - timestamp,
+    );
+    console.log('expected signature (manual):', expectedSignature);
     console.log('received signature:', signature);
+    console.log('match:', expectedSignature === signature);
+
     const result = v2.utils.verifyNotificationSignature(
-      rawBody!.toString(),
+      bodyString,
       timestamp,
       signature,
       7200,
     );
-    console.log('verification result:', result);
+    console.log('SDK verification result:', result);
     return result;
   }
 
