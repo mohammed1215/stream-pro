@@ -33,7 +33,15 @@ export class VideosService {
   ) {}
 
   async create(channelId: string, createVideoDto: CreateVideoDto) {
-    return this.videoRepo.create(createVideoDto, channelId);
+    const data = await this.videoRepo.create(createVideoDto, channelId);
+    const signatureData = this.cloudinaryService.getUploadSignature(
+      data.id,
+      channelId,
+    );
+    return {
+      videoId: data.id,
+      signatureData,
+    };
   }
 
   getAllVideosOfChannel(

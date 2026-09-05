@@ -23,6 +23,8 @@ import { HomeModule } from './home/home.module';
 import { WatchHistoryModule } from './watch-history/watch-history.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { WeebhooksModule } from './weebhooks/weebhooks.module';
+import { WebhooksController } from './webhooks/webhooks.controller';
 
 export const VIDEO_STORAGE = memoryStorage();
 
@@ -70,8 +72,10 @@ export const VIDEO_STORAGE = memoryStorage();
         limit: 100,
       },
     ]),
+
+    WeebhooksModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, WebhooksController],
   providers: [
     AppService,
     VideoProcessingService,

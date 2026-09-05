@@ -50,7 +50,6 @@ import { VideoDetailsOwnerResponseDto } from '../dto/responses/owner/get-video-d
 import { memoryStorage } from 'multer';
 import { UploadCompletedDto } from '../dto/upload-completed.dto';
 import { UploadCompletedResponseDto } from '../dto/responses/owner/upload-completed.dto';
-import { UploadSignatureResponseDto } from '../dto/responses/owner/upload-signature-response.dto';
 const videoUploadStorage = memoryStorage();
 
 @ApiTags('Owner-Videos')
@@ -62,27 +61,8 @@ export class VideosOwnerController {
   constructor(private readonly videosService: VideosService) {}
 
   // ========================== Create Video ==========================
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-        description: { type: 'string' },
-        video: {
-          type: 'string',
-          format: 'binary',
-        },
-        thumbnail: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
-      required: ['title', 'video', 'thumbnail', 'description'],
-    },
-  })
   @ApiCreatedResponse({ type: VideoCreatedResponseDto })
-  @Post()
+  @Post('initiate')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @UseInterceptors(ChannelPreloadInterceptor)
@@ -90,13 +70,12 @@ export class VideosOwnerController {
     @Body() createVideoDto: CreateVideoDto,
     @Channel() channel: ChannelRequestData,
   ) {
-    const { duration, ...videoServiceData } = await this.videosService.create(
+    const { ...videoServiceData } = await this.videosService.create(
       channel.id,
       createVideoDto,
     );
     return new SuccessResponseShape({
       ...videoServiceData,
-      durationSeconds: duration,
     });
   }
 
@@ -174,49 +153,6 @@ export class VideosOwnerController {
       pageSize: limit,
       ...rest,
     });
-  }
-
-  @Get('upload-signature')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
-  @UseInterceptors(ChannelPreloadInterceptor)
-  @ApiOperation({ summary: 'get upload signature for video upload' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: { videoId: { type: 'string' } },
-      required: ['videoId'],
-    },
-  })
-  @ApiResponse({ type: UploadSignatureResponseDto })
-  uploadSignature(
-    @Channel() channel: ChannelRequestData,
-    @Body('videoId') videoId: string,
-  ) {
-    const folder = `videos/${channel.id}`;
-    return this.videosService.getUploadSignature(channel.id, videoId, folder);
-  }
-
-  @Post('video-upload-webhook')
-  async updateVideoStatus(@Req() req: RawBodyRequest<Request>) {
-    const timestamp = req.headers['x-cld-timestamp'];
-    const signature = req.headers['x-cld-signature'];
-    if (!timestamp || !signature) {
-      throw new BadRequestException('Missing required headers');
-    }
-    const isValid = this.videosService.verifyNotificationSignature(
-      req.rawBody,
-      Number(timestamp),
-      signature as string,
-    );
-
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid signature');
-    }
-
-    const payload = JSON.parse(req.rawBody!.toString());
-    await this.videosService.handleUploadNotification(payload);
-    return;
   }
 
   @Get(':videoId')
