@@ -11,18 +11,24 @@ import { SortByVideo } from '../dto/video-query.dto';
 import { VideoOrderByWithAggregationInput } from '../../generated/prisma/models';
 import { VideoSortByEnum, VideoStatusEnum } from '../enum/enums';
 import { UploadCompletedDto } from '../dto/upload-completed.dto';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class VideoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createVideoDto: CreateVideoDto, channelId: string) {
+    const videoId = randomUUID();
+    const publicId = `channels/${channelId}/videos/${videoId}`;
+
     const video = await this.prisma.video.create({
       data: {
         ...createVideoDto,
         duration: 0,
         size: 0,
         channelId,
+        publicId,
+        id: videoId,
       },
       select: {
         id: true,
@@ -33,6 +39,7 @@ export class VideoRepository {
         updatedAt: true,
         duration: true,
         size: true,
+        publicId: true,
       },
     });
 

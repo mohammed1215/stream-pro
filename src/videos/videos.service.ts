@@ -35,13 +35,13 @@ export class VideosService {
   async create(channelId: string, createVideoDto: CreateVideoDto) {
     const video = await this.videoRepo.create(createVideoDto, channelId);
     const signatureVideoData = this.cloudinaryService.getVideoUploadSignature(
-      video.id,
+      video.publicId ?? '',
       `channels/${channelId}/videos`,
     );
 
     const signatureThumbnailData =
       this.cloudinaryService.getThumbnailUploadSignature(
-        `${video.id}_thumb`,
+        `${video.publicId ?? ''}_thumb`,
         `channels/${channelId}/thumbnails`,
       );
 
@@ -157,6 +157,13 @@ export class VideosService {
   // ================================ Remove Video ==============================
 
   async removeVideo(videoId: string, channelId: string) {
+    // delete video from cloudinary
+    const video = await this.videoRepo.findById(videoId);
+    if (!video) throw new NotFoundException('video not found');
+    if (!video.publicId)
+      throw new BadRequestException('video publicId not found');
+    await this.cloudinaryService.removeVideo(video.publicId);
+    await this.cloudinaryService.removeImage(video.publicId + '_thumb');
     await this.videoRepo.removeVideo(videoId, channelId);
     return { message: 'video removed successfully', videoId, channelId };
   }
@@ -295,9 +302,16 @@ export class VideosService {
     return newVideo;
   }
 
-  getUploadSignature(channelId: string, videoId: string, folder: string) {
+  async getUploadSignature(channelId: string, videoId: string, folder: string) {
+    const video = await this.videoRepo.findById(videoId);
+    if (!video) {
+      throw new NotFoundException('video not found');
+    }
+    if (!video.publicId) {
+      throw new BadRequestException('video publicId not found');
+    }
     const data = this.cloudinaryService.getVideoUploadSignature(
-      videoId,
+      video.publicId,
       folder,
     );
     return {

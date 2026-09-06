@@ -81,54 +81,38 @@ export class CloudinaryService implements OnModuleInit {
       Readable.from(video.buffer).pipe(stream);
     });
   }
-  removeImage(imageUrl: string): Promise<any> {
-    const publicId = imageUrl.split('/').pop()?.split('.')[0];
+
+  async removeResource(
+    publicId: string,
+    resourceType: 'image' | 'video',
+  ): Promise<any> {
     if (!publicId) {
-      return Promise.reject(new BadRequestException('Invalid image URL'));
+      throw new BadRequestException(`Invalid ${resourceType} identifier`);
     }
 
-    return new Promise((resolve, reject) => {
-      v2.uploader.destroy(
-        publicId,
-        { resource_type: 'image' },
-        (err, result) => {
-          if (err) {
-            console.error(err);
-            return reject(
-              new InternalServerErrorException(
-                'error while removing the image',
-              ),
-            );
-          }
-          resolve(result);
-        },
-      );
-    });
+    try {
+      const result = await v2.uploader.destroy(publicId, {
+        resource_type: resourceType,
+        invalidate: true,
+      });
+
+      if (result.result === 'not found') {
+        console.warn(`${resourceType} not found on Cloudinary: ${publicId}`);
+      }
+
+      return result;
+    } catch (err) {
+      console.error(`Failed to delete ${resourceType} (${publicId}):`, err);
+      throw new InternalServerErrorException(`Error removing ${resourceType}`);
+    }
   }
 
-  removeVideo(videoUrl: string): Promise<any> {
-    const publicId = videoUrl.split('/').pop()?.split('.')[0];
-    if (!publicId) {
-      return Promise.reject(new BadRequestException('Invalid video URL'));
-    }
+  async removeImage(publicId: string) {
+    return this.removeResource(publicId, 'image');
+  }
 
-    return new Promise((resolve, reject) => {
-      v2.uploader.destroy(
-        publicId,
-        { resource_type: 'video' },
-        (err, result) => {
-          if (err) {
-            console.error(err);
-            return reject(
-              new InternalServerErrorException(
-                'error while removing the video',
-              ),
-            );
-          }
-          resolve(result);
-        },
-      );
-    });
+  async removeVideo(publicId: string) {
+    return this.removeResource(publicId, 'video');
   }
 
   private signPayload(
