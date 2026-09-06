@@ -33,14 +33,22 @@ export class VideosService {
   ) {}
 
   async create(channelId: string, createVideoDto: CreateVideoDto) {
-    const data = await this.videoRepo.create(createVideoDto, channelId);
-    const signatureData = this.cloudinaryService.getUploadSignature(
-      data.id,
-      channelId,
+    const video = await this.videoRepo.create(createVideoDto, channelId);
+    const signatureVideoData = this.cloudinaryService.getVideoUploadSignature(
+      video.id,
+      `channels/${channelId}/videos`,
     );
+
+    const signatureThumbnailData =
+      this.cloudinaryService.getThumbnailUploadSignature(
+        `${video.id}_thumb`,
+        `channels/${channelId}/thumbnails`,
+      );
+
     return {
-      videoId: data.id,
-      signatureData,
+      videoId: video.id,
+      signatureVideoData,
+      signatureThumbnailData,
     };
   }
 
@@ -288,7 +296,10 @@ export class VideosService {
   }
 
   getUploadSignature(channelId: string, videoId: string, folder: string) {
-    const data = this.cloudinaryService.getUploadSignature(videoId, folder);
+    const data = this.cloudinaryService.getVideoUploadSignature(
+      videoId,
+      folder,
+    );
     return {
       ...data,
     };
@@ -338,6 +349,7 @@ export class VideosService {
       throw err;
     }
   }
+
   async uploadCompleted(
     channelId: string,
     uploadCompletedDto: UploadCompletedDto,
@@ -348,6 +360,21 @@ export class VideosService {
       public_id: uploadCompletedDto.publicId,
       version: uploadCompletedDto.version,
     });
+
+    const { publicId, version, signature } = uploadCompletedDto;
+
+    if (publicId && version && signature) {
+      const result2 =
+        this.cloudinaryService.verifyUploadThumbnailResponseSignature({
+          public_id: publicId,
+          version: version,
+          signature: signature,
+        });
+
+      if (!result2) {
+        throw new BadRequestException('invalid thumbnail signature');
+      }
+    }
 
     if (!result) {
       throw new BadRequestException('invalid signature');
@@ -362,7 +389,8 @@ export class VideosService {
     if (video.channelId !== channelId) {
       throw new BadRequestException('video does not belong to the channel');
     }
-
+    console.log(uploadCompletedDto.publicId.split('/').at(-1));
+    console.log(video.id);
     if (video.id !== uploadCompletedDto.publicId.split('/').at(-1)) {
       throw new BadRequestException('video id does not match public id');
     }

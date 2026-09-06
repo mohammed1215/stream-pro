@@ -131,37 +131,56 @@ export class CloudinaryService implements OnModuleInit {
     });
   }
 
-  getUploadSignature(publicId: string, folder: string) {
+  private signPayload(
+    payload: Record<string, unknown>,
+    resourceType: 'image' | 'video',
+  ) {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const paramsToSign = { ...payload, timestamp };
+    const signature = v2.utils.api_sign_request(
+      paramsToSign,
+      cloudinaryConfig.api_secret ?? '',
+    );
+    return {
+      ...paramsToSign,
+      signature,
+      apiKey: cloudinaryConfig.api_key,
+      uploadUrl: `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloud_name ?? ''}/${resourceType}/upload`,
+    };
+  }
+
+  getVideoUploadSignature(publicId: string, folder: string) {
     const timestamp = Math.floor(Date.now() / 1000);
 
     const eager = [{ streaming_profile: 'full_hd', format: 'm3u8' }];
     const eagerString = (v2.utils as any).build_eager(eager);
     const eagerNotificationUrl = cloudinaryConfig.eagerNotificationUrl;
 
-    const paramsToSign = {
-      timestamp,
-      folder,
-      eager: eagerString,
-      eager_async: true,
-      eager_notification_url: eagerNotificationUrl,
-      public_id: publicId,
-    };
-
-    const signature = v2.utils.api_sign_request(
-      paramsToSign,
-      cloudinaryConfig.api_secret ?? '',
+    return this.signPayload(
+      {
+        timestamp,
+        folder,
+        eager: eagerString,
+        eager_async: true,
+        eager_notification_url: eagerNotificationUrl,
+        public_id: publicId,
+      },
+      'video',
     );
+  }
 
-    return {
-      signature,
-      timestamp,
-      apiKey: cloudinaryConfig.api_key,
-      folder,
-      eager: eagerString,
-      eagerNotificationUrl,
-      eagerAsync: true,
-      uploadUrl: `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloud_name ?? ''}/video/upload`,
-    };
+  getThumbnailUploadSignature(publicId: string, folder: string) {
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    return this.signPayload(
+      {
+        timestamp,
+        folder,
+        public_id: publicId,
+        transformation: 'c_fill,w_1280,h_720,q_auto,f_auto',
+      },
+      'image',
+    );
   }
 
   verifyNotificationSignature(
@@ -217,6 +236,18 @@ export class CloudinaryService implements OnModuleInit {
       cloudinaryConfig.api_secret ?? '',
     );
 
+    return expectedSignature === payload.signature;
+  }
+
+  verifyUploadThumbnailResponseSignature(payload: {
+    signature: string;
+    public_id: string;
+    version: number;
+  }) {
+    const expectedSignature = v2.utils.api_sign_request(
+      { public_id: payload.public_id, version: payload.version },
+      cloudinaryConfig.api_secret ?? '',
+    );
     return expectedSignature === payload.signature;
   }
 }

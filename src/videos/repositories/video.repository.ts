@@ -355,10 +355,13 @@ export class VideoRepository {
     });
   }
 
-  uploadCompleted(videoId: string, { duration, bytes }: UploadCompletedDto) {
+  uploadCompleted(
+    videoId: string,
+    { duration, bytes, thumbnailUrl }: UploadCompletedDto,
+  ) {
     return this.prisma.video.update({
       where: { id: videoId },
-      data: { duration, size: bytes },
+      data: { duration, size: bytes, thumbnailUrl },
     });
   }
 }
