@@ -7,7 +7,6 @@ import { CreateVideoDto } from './dto/create-video.dto';
 import { VideoRepository } from './repositories/video.repository';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { VideoProcessingService } from '../video-processing/video-processing.service';
-import fs from 'fs';
 import { UpdateVideoDto } from './dto/update-video.dto';
 
 import { videoDetailsOwnerSelectFor } from './repositories/video-select';
@@ -15,11 +14,9 @@ import { Prisma, VideoStatus } from '../generated/prisma/client';
 import { SortByVideo } from './dto/video-query.dto';
 import { buildPaginationMeta } from '../utils/pagination.util';
 import { VideoSortByEnum, VideoStatusEnum } from './enum/enums';
-import { UploadCompletedDto } from './dto/upload-completed.dto';
+import { VideoUploadCompletedDto } from './dto/video-upload-completed.dto';
+import { ThumbnailUploadCompletedDto } from './dto/thumbnail-upload-completed.dto';
 
-// Single source of truth for the "owner details, enriched with this
-// user's like/subscription state" return type, derived directly from
-// the select factory so it can never drift out of sync with it.
 type VideoDetailsOwner = Prisma.VideoGetPayload<{
   select: ReturnType<typeof videoDetailsOwnerSelectFor>;
 }>;
@@ -34,14 +31,15 @@ export class VideosService {
 
   async create(channelId: string, createVideoDto: CreateVideoDto) {
     const video = await this.videoRepo.create(createVideoDto, channelId);
+
     const signatureVideoData = this.cloudinaryService.getVideoUploadSignature(
-      video.publicId ?? '',
+      video.id,
       `channels/${channelId}/videos`,
     );
 
     const signatureThumbnailData =
       this.cloudinaryService.getThumbnailUploadSignature(
-        `${video.publicId ?? ''}_thumb`,
+        `${video.id}_thumb`,
         `channels/${channelId}/thumbnails`,
       );
 
@@ -50,6 +48,85 @@ export class VideosService {
       signatureVideoData,
       signatureThumbnailData,
     };
+  }
+
+  // =========================== Upload Completed ===========================
+
+  async videoUploadCompleted(
+    channelId: string,
+    videoId: string,
+    dto: VideoUploadCompletedDto,
+  ) {
+    const isValid = this.cloudinaryService.verifyUploadResponseSignature({
+      signature: dto.signature,
+      public_id: dto.publicId,
+      version: dto.version,
+    });
+    if (!isValid) {
+      throw new BadRequestException('invalid signature');
+    }
+
+    const video = await this.findAndAuthorizeVideo(videoId, channelId);
+
+    const segment = dto.publicId.split('/').at(-1);
+    if (segment !== video.id) {
+      throw new BadRequestException('video id does not match public id');
+    }
+
+    return this.videoRepo.updateVideoDetails(
+      video.id,
+      channelId,
+      { publicId: dto.publicId, duration: dto.duration, size: dto.bytes },
+      { id: true, publicId: true },
+    );
+  }
+
+  async thumbnailUploadCompleted(
+    channelId: string,
+    videoId: string,
+    dto: ThumbnailUploadCompletedDto,
+  ) {
+    const isValid = this.cloudinaryService.verifyUploadResponseSignature({
+      signature: dto.signature,
+      public_id: dto.publicId,
+      version: dto.version,
+    });
+    if (!isValid) {
+      throw new BadRequestException('invalid thumbnail signature');
+    }
+
+    const video = await this.findAndAuthorizeVideo(videoId, channelId);
+
+    const segment = dto.publicId.split('/').at(-1);
+    if (segment !== `${video.id}_thumb`) {
+      throw new BadRequestException(
+        'video id does not match thumbnail public id',
+      );
+    }
+
+    return this.videoRepo.updateVideoDetails(
+      video.id,
+      channelId,
+      {
+        thumbnailUrl: dto.thumbnailUrl,
+      },
+      { id: true, thumbnailUrl: true },
+    );
+  }
+
+  private getThumbnailPublicId(channelId: string, videoId: string): string {
+    return `channels/${channelId}/thumbnails/${videoId}_thumb`;
+  }
+
+  private async findAndAuthorizeVideo(videoId: string, channelId: string) {
+    const video = await this.videoRepo.findById(videoId);
+    if (!video) {
+      throw new NotFoundException('video not found');
+    }
+    if (video.channelId !== channelId) {
+      throw new BadRequestException('video does not belong to the channel');
+    }
+    return video;
   }
 
   getAllVideosOfChannel(
@@ -81,7 +158,10 @@ export class VideosService {
       sortBy,
     );
 
-    const totalCount = await this.videoRepo.countVideosOfChannel(true);
+    const totalCount = await this.videoRepo.countVideosOfChannel(
+      channelId,
+      true,
+    );
 
     const meta = buildPaginationMeta(totalCount, pageNumber, pageSize);
 
@@ -157,24 +237,22 @@ export class VideosService {
   // ================================ Remove Video ==============================
 
   async removeVideo(videoId: string, channelId: string) {
-    // delete video from cloudinary
     const video = await this.videoRepo.findById(videoId);
     if (!video) throw new NotFoundException('video not found');
-    if (!video.publicId)
-      throw new BadRequestException('video publicId not found');
-    await this.cloudinaryService.removeVideo(video.publicId);
-    await this.cloudinaryService.removeImage(video.publicId + '_thumb');
+
+    if (video.publicId) {
+      await this.cloudinaryService.removeVideo(video.publicId);
+    } else {
+      console.warn(`No publicId for video ${videoId}, skipping video cleanup`);
+    }
+
+    await this.cloudinaryService.removeImage(
+      this.getThumbnailPublicId(channelId, videoId),
+    );
+
     await this.videoRepo.removeVideo(videoId, channelId);
     return { message: 'video removed successfully', videoId, channelId };
   }
-
-  // removeFile(filePath: string) {
-  //   fs.unlink(filePath, (err) => {
-  //     if (err) {
-  //       console.log('Error while removing file: ', err.message);
-  //     }
-  //   });
-  // }
 
   // =============================== Update Video Details ==============================
 
@@ -198,57 +276,60 @@ export class VideosService {
     return video;
   }
 
-  async updateVideoThumbnail(
-    videoId: string,
-    channelId: string,
-    thumbnailFile: Express.Multer.File,
-    userId: string,
-  ): Promise<VideoDetailsOwner> {
-    if (!thumbnailFile) {
-      throw new BadRequestException('thumbnail file is required');
-    }
-
-    // Verify ownership BEFORE touching Cloudinary
-    const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
-      videoId,
-      userId,
+  // update video thumbnail signature (signed direct-to-Cloudinary flow)
+  getUpdateVideoThumbnailSignature(videoId: string, channelId: string) {
+    return this.cloudinaryService.getThumbnailUploadSignature(
+      `${videoId}_thumb`,
+      `channels/${channelId}/thumbnails`,
     );
-    if (!oldVideo) {
-      throw new NotFoundException('video not found or not owned by channel');
-    }
-
-    const imageUrl = await this.cloudinaryService.uploadImage(thumbnailFile);
-
-    let newVideo: VideoDetailsOwner | null;
-    try {
-      newVideo = await this.videoRepo.updateVideoDetails(
-        videoId,
-        channelId,
-        { thumbnailUrl: imageUrl },
-        videoDetailsOwnerSelectFor(userId),
-      );
-    } catch (err) {
-      // Roll back the orphaned upload if the DB write fails
-      await this.cloudinaryService.removeImage(imageUrl);
-      throw err;
-    }
-
-    if (!newVideo) {
-      // Row disappeared between the ownership check and the update
-      // (e.g. deleted concurrently) - clean up and report not found.
-      await this.cloudinaryService.removeImage(imageUrl);
-      throw new NotFoundException('video not found or not owned by channel');
-    }
-
-    if (
-      oldVideo.thumbnailUrl &&
-      oldVideo.thumbnailUrl !== newVideo.thumbnailUrl
-    ) {
-      this.cloudinaryService.removeImage(oldVideo.thumbnailUrl);
-    }
-
-    return newVideo;
   }
+
+  getUpdateVideoMediaSignature(videoId: string, channelId: string) {
+    return this.cloudinaryService.getVideoUploadSignature(
+      videoId,
+      `channels/${channelId}/videos`,
+    );
+  }
+
+  // async updateVideoThumbnail(
+  //   videoId: string,
+  //   channelId: string,
+  //   userId: string,
+  //   thumbnailFile: Express.Multer.File,
+  // ): Promise<VideoDetailsOwner> {
+  //   // Verify ownership BEFORE touching Cloudinary
+  //   const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
+  //     videoId,
+  //     userId,
+  //   );
+  //   if (!oldVideo) {
+  //     throw new NotFoundException('video not found or not owned by channel');
+  //   }
+
+  //   // overwrite: true means this replaces the same asset in place, so
+  //   // there's no old asset left to roll back / clean up on failure.
+  //   const uploadResult = await this.cloudinaryService.uploadImage(
+  //     thumbnailFile,
+  //     `${videoId}_thumb`,
+  //     `channels/${channelId}/thumbnails`,
+  //   );
+
+  //   // No thumbnailPublicId column - only the derived URL is persisted.
+  //   const newVideo = await this.videoRepo.updateVideoDetails(
+  //     videoId,
+  //     channelId,
+  //     { thumbnailUrl: uploadResult.secure_url },
+  //     videoDetailsOwnerSelectFor(userId),
+  //   );
+
+  //   if (!newVideo) {
+  //     // Row disappeared between the ownership check and the update
+  //     // (e.g. deleted concurrently).
+  //     throw new NotFoundException('video not found or not owned by channel');
+  //   }
+
+  //   return newVideo;
+  // }
 
   async updateVideoMedia(
     videoId: string,
@@ -257,7 +338,7 @@ export class VideosService {
     userId: string,
   ): Promise<VideoDetailsOwner> {
     if (!video) {
-      throw new BadRequestException('thumbnail file is required');
+      throw new BadRequestException('video file is required');
     }
 
     // Verify ownership BEFORE touching Cloudinary
@@ -269,55 +350,33 @@ export class VideosService {
       throw new NotFoundException('video not found or not owned by channel');
     }
 
-    const videoUrl = await this.cloudinaryService.uploadVideo(video);
+    const uploadResult = await this.cloudinaryService.uploadVideo(
+      video,
+      videoId,
+      `channels/${channelId}/videos`,
+    );
 
-    let newVideo: VideoDetailsOwner | null;
-    try {
-      newVideo = await this.videoRepo.updateVideoDetails(
-        videoId,
-        channelId,
-        { videoUrl },
-        videoDetailsOwnerSelectFor(userId),
-      );
-    } catch (err) {
-      // Roll back the orphaned upload if the DB write fails
-      await this.cloudinaryService.removeVideo(videoUrl);
-      throw err;
-    }
+    const newVideo = await this.videoRepo.updateVideoDetails(
+      videoId,
+      channelId,
+      { videoUrl: uploadResult.secure_url, publicId: uploadResult.public_id },
+      videoDetailsOwnerSelectFor(userId),
+    );
 
     if (!newVideo) {
-      // Row disappeared between the ownership check and the update
-      // (e.g. deleted concurrently) - clean up and report not found.
-      await this.cloudinaryService.removeVideo(videoUrl);
       throw new NotFoundException('video not found or not owned by channel');
-    }
-
-    if (
-      oldVideo.thumbnailUrl &&
-      oldVideo.thumbnailUrl !== newVideo.thumbnailUrl
-    ) {
-      this.cloudinaryService.removeVideo(oldVideo.thumbnailUrl);
     }
 
     return newVideo;
   }
 
-  async getUploadSignature(channelId: string, videoId: string, folder: string) {
-    const video = await this.videoRepo.findById(videoId);
-    if (!video) {
-      throw new NotFoundException('video not found');
-    }
-    if (!video.publicId) {
-      throw new BadRequestException('video publicId not found');
-    }
-    const data = this.cloudinaryService.getVideoUploadSignature(
-      video.publicId,
-      folder,
-    );
-    return {
-      ...data,
-    };
-  }
+  // async getUploadSignature(channelId: string, videoId: string, folder: string) {
+  //   const video = await this.videoRepo.findById(videoId);
+  //   if (!video) {
+  //     throw new NotFoundException('video not found');
+  //   }
+  //   return this.cloudinaryService.getVideoUploadSignature(video.id, folder);
+  // }
 
   verifyNotificationSignature(
     rawBody: any,
@@ -334,8 +393,8 @@ export class VideosService {
   async handleUploadNotification(payload: any) {
     if (payload.notification_type !== 'eager') return;
 
-    const videoId = payload.public_id?.split('/').at(-1);
-    if (!videoId) return;
+    const publicId = payload.public_id;
+    if (!publicId) return;
 
     const hlsResult = payload.eager?.[0];
     const isStillProcessing = hlsResult?.status === 'processing';
@@ -348,7 +407,7 @@ export class VideosService {
 
     try {
       return await this.videoRepo.handleUploadNotification({
-        publicId: videoId,
+        publicId,
         status,
         hlsUrl: status === VideoStatus.READY ? hlsResult?.secure_url : null,
       });
@@ -357,61 +416,10 @@ export class VideosService {
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === 'P2025'
       ) {
-        console.warn(`Webhook: video ${videoId} not found`);
+        console.warn(`Webhook: video with publicId ${publicId} not found`);
         return;
       }
       throw err;
     }
-  }
-
-  async uploadCompleted(
-    channelId: string,
-    uploadCompletedDto: UploadCompletedDto,
-  ) {
-    // check if signature is valid
-    const result = this.cloudinaryService.verifyUploadResponseSignature({
-      signature: uploadCompletedDto.signature,
-      public_id: uploadCompletedDto.publicId,
-      version: uploadCompletedDto.version,
-    });
-
-    const { publicId, version, signature } = uploadCompletedDto;
-
-    if (publicId && version && signature) {
-      const result2 =
-        this.cloudinaryService.verifyUploadThumbnailResponseSignature({
-          public_id: publicId,
-          version: version,
-          signature: signature,
-        });
-
-      if (!result2) {
-        throw new BadRequestException('invalid thumbnail signature');
-      }
-    }
-
-    if (!result) {
-      throw new BadRequestException('invalid signature');
-    }
-
-    // check if video exists and belongs to the channel
-    const video = await this.videoRepo.findById(uploadCompletedDto.videoId);
-    if (!video) {
-      throw new NotFoundException('video not found');
-    }
-
-    if (video.channelId !== channelId) {
-      throw new BadRequestException('video does not belong to the channel');
-    }
-    console.log(uploadCompletedDto.publicId.split('/').at(-1));
-    console.log(video.id);
-    if (video.id !== uploadCompletedDto.publicId.split('/').at(-1)) {
-      throw new BadRequestException('video id does not match public id');
-    }
-
-    return this.videoRepo.uploadCompleted(uploadCompletedDto.videoId, {
-      ...uploadCompletedDto,
-      duration: Math.trunc(uploadCompletedDto.duration),
-    });
   }
 }

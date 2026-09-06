@@ -21,15 +21,18 @@ export class SignatureVideoDataSummary {
   @ApiPropertyOptional({
     description: 'Webhook URL Cloudinary pings on transcode completion',
   })
-  eagerNotificationUrl?: string;
+  eager_notification_url?: string;
 
   @ApiProperty({ example: true })
-  eagerAsync!: boolean;
+  eager_async!: boolean;
 
   @ApiProperty({
     example: 'https://api.cloudinary.com/v1_1/******/video/upload',
   })
   uploadUrl!: string;
+
+  @ApiProperty({ example: 'vid_987654321' })
+  public_id!: string;
 }
 
 export class SignatureThumbnailDataSummary {
@@ -47,21 +50,16 @@ export class SignatureThumbnailDataSummary {
   @ApiProperty({ example: 'thumbnails/channel_123' })
   folder!: string;
 
-  @ApiPropertyOptional({ example: 'sp_full_hd/m3u8' })
-  eager?: string;
-
-  @ApiPropertyOptional({
-    description: 'Webhook URL Cloudinary pings on transcode completion',
-  })
-  eagerNotificationUrl?: string;
-
-  @ApiProperty({ example: true })
-  eagerAsync!: boolean;
-
   @ApiProperty({
     example: 'https://api.cloudinary.com/v1_1/******/image/upload',
   })
   uploadUrl!: string;
+
+  @ApiProperty({ example: 'vid_987654321' })
+  public_id!: string;
+
+  @ApiProperty({ example: 'c_fill,w_1280,h_720,q_auto,f_auto' })
+  transformation!: string;
 }
 
 export class CreateVideoResponseDto {

@@ -10,7 +10,6 @@ import { Prisma, VideoStatus } from '../../generated/prisma/client';
 import { SortByVideo } from '../dto/video-query.dto';
 import { VideoOrderByWithAggregationInput } from '../../generated/prisma/models';
 import { VideoSortByEnum, VideoStatusEnum } from '../enum/enums';
-import { UploadCompletedDto } from '../dto/upload-completed.dto';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -97,9 +96,21 @@ export class VideoRepository {
     return videos;
   }
 
-  async countVideosOfChannel(owner: boolean) {
+  /**
+   * FIX: previously had no `channelId` param at all (it counted every video
+   * on the whole platform, not this channel's), and the `owner` flag was
+   * inverted (`isPublished: !owner` meant the owner view only counted
+   * UNpublished videos). Now scoped to the channel, and the owner sees all
+   * of their own videos (published + unpublished) while a visitor only
+   * sees the published count.
+   */
+  async countVideosOfChannel(channelId: string, owner: boolean) {
     return this.prisma.video.count({
-      where: { isDeleted: false, isPublished: !owner },
+      where: {
+        channelId,
+        isDeleted: false,
+        ...(owner ? {} : { isPublished: true }),
+      },
     });
   }
 
@@ -347,6 +358,12 @@ export class VideoRepository {
     }
   }
 
+  /**
+   * FIX: was `where: { id: publicId }` - but the caller now passes the FULL
+   * public_id path (channels/{channelId}/videos/{videoId}), not the bare
+   * UUID, so this always failed with "record not found". Match on the
+   * `publicId` column directly instead.
+   */
   handleUploadNotification({
     publicId,
     status,
@@ -357,18 +374,8 @@ export class VideoRepository {
     hlsUrl: string | null;
   }) {
     return this.prisma.video.update({
-      where: { id: publicId },
+      where: { publicId },
       data: { videoStatus: status, hlsUrl },
-    });
-  }
-
-  uploadCompleted(
-    videoId: string,
-    { duration, bytes, thumbnailUrl }: UploadCompletedDto,
-  ) {
-    return this.prisma.video.update({
-      where: { id: videoId },
-      data: { duration, size: bytes, thumbnailUrl },
     });
   }
 }

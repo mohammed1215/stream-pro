@@ -19,29 +19,34 @@ export class UploadCompletedDto {
   @ApiProperty({ description: 'Cloudinary Video Public ID' })
   @IsString()
   @IsNotEmpty()
-  publicId!: string;
+  @IsOptional()
+  publicId?: string;
 
   @ApiProperty({ description: 'Cloudinary Asset Version' })
   @IsNumber()
   @Type(() => Number)
-  version!: number;
+  @IsOptional()
+  version?: number;
 
   @ApiProperty({ description: 'Cloudinary Signature for verification' })
   @IsString()
   @IsNotEmpty()
-  signature!: string;
+  @IsOptional()
+  signature?: string;
 
   @ApiProperty({ description: 'Video duration in seconds' })
   @IsNumber()
   @Type(() => Number)
   @Min(0)
-  duration!: number;
+  @IsOptional()
+  duration?: number;
 
   @ApiProperty({ description: 'Video size in bytes' })
   @IsNumber()
   @Type(() => Number)
   @Min(0)
-  bytes!: number;
+  @IsOptional()
+  bytes?: number;
 
   // ================= Thumbnail Fields (Optional) =================
 

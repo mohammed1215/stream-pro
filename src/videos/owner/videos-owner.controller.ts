@@ -11,9 +11,6 @@ import {
   Patch,
   Post,
   Query,
-  RawBodyRequest,
-  Req,
-  UnauthorizedException,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -48,8 +45,9 @@ import { JwtUserPayload } from '../../user/user.service';
 import { User } from '../../decorators/user-decorator';
 import { VideoDetailsOwnerResponseDto } from '../dto/responses/owner/get-video-details.dto';
 import { memoryStorage } from 'multer';
-import { UploadCompletedDto } from '../dto/upload-completed.dto';
-import { UploadCompletedResponseDto } from '../dto/responses/owner/upload-completed.dto';
+import { VideoUploadCompletedDto } from '../dto/video-upload-completed.dto';
+import { ThumbnailUploadCompletedDto } from '../dto/thumbnail-upload-completed.dto';
+
 const videoUploadStorage = memoryStorage();
 
 @ApiTags('Owner-Videos')
@@ -171,6 +169,7 @@ export class VideosOwnerController {
   ) {
     return this.videosService.findOneVideoOwnerDetails(videoId, user.userId);
   }
+
   // ========================== Update Video Details ==========================
   @Patch(':videoId')
   @UseGuards(AuthGuard)
@@ -255,121 +254,68 @@ export class VideosOwnerController {
     return new SuccessResponseShape(videoServiceData);
   }
 
-  // ======================== Update Video Thumbnail ==========================
-  @Patch(':videoId/thumbnail')
-  @ApiConsumes('multipart/form-data')
+  // ==================== Video / Thumbnail upload completed ====================
+  // Split into two endpoints - see VideosService for why. The old unified
+  // `POST upload-completed` route was removed in favor of these.
+
+  @Post(':videoId/video-upload-completed')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(
-    ChannelPreloadInterceptor,
-    FileFieldsInterceptor([{ name: 'thumbnail', maxCount: 1 }], {
-      storage: videoUploadStorage,
-    }),
-  )
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        thumbnail: { type: 'string', format: 'binary' },
-      },
-      required: ['thumbnail'],
-    },
-  })
+  @UseInterceptors(ChannelPreloadInterceptor)
+  async videoUploadCompleted(
+    @Param('videoId') videoId: string,
+    @Body() dto: VideoUploadCompletedDto,
+    @Channel() channel: ChannelRequestData,
+  ) {
+    return this.videosService.videoUploadCompleted(channel.id, videoId, dto);
+  }
+
+  @Post(':videoId/thumbnail-upload-completed')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(ChannelPreloadInterceptor)
+  async thumbnailUploadCompleted(
+    @Param('videoId') videoId: string,
+    @Body() dto: ThumbnailUploadCompletedDto,
+    @Channel() channel: ChannelRequestData,
+  ) {
+    return this.videosService.thumbnailUploadCompleted(
+      channel.id,
+      videoId,
+      dto,
+    );
+  }
+
+  // ======================== Update Video Thumbnail ==========================
+  @Patch(':videoId/thumbnail/signature')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(ChannelPreloadInterceptor)
   @ApiResponse({
     status: 200,
     description: 'Video thumbnail updated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Video thumbnail updated successfully',
-        },
-        videoId: { type: 'string' },
-        channelId: { type: 'string' },
-      },
-    },
   })
-  async updateVideoThumbnail(
+  getUpdateVideoThumbnailSignature(
     @Param('videoId') videoId: string,
     @Channel() channel: ChannelRequestData,
-    @User() user: JwtUserPayload,
-    @UploadedFiles()
-    files: { thumbnail?: Express.Multer.File[]; video?: Express.Multer.File[] },
   ) {
-    if (!files.thumbnail || !files.thumbnail[0]) {
-      throw new BadRequestException('thumbnail file is required');
-    }
-    await this.videosService.updateVideoThumbnail(
+    return this.videosService.getUpdateVideoThumbnailSignature(
       videoId,
       channel.id,
-      files.thumbnail[0],
-      user.userId,
     );
-
-    return {
-      message: 'Video thumbnail updated successfully',
-      videoId,
-      channelId: channel.id,
-    };
   }
+
   // ======================== Update Video Media ==========================
   @ApiConsumes('multipart/form-data')
-  @Patch(':videoId/media')
+  @Patch(':videoId/media/signature')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(
-    ChannelPreloadInterceptor,
-    FileFieldsInterceptor([{ name: 'video', maxCount: 1 }], {
-      storage: videoUploadStorage,
-    }),
-  )
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        video: { type: 'string', format: 'binary' },
-      },
-      required: ['video'],
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Video thumbnail updated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Video media updated successfully',
-        },
-        videoId: { type: 'string' },
-        channelId: { type: 'string' },
-      },
-    },
-  })
-  async updateVideoMedia(
+  @UseInterceptors(ChannelPreloadInterceptor)
+  getUpdateVideoMediaSignature(
     @Param('videoId') videoId: string,
     @Channel() channel: ChannelRequestData,
-    @User() user: JwtUserPayload,
-    @UploadedFiles()
-    files: { thumbnail?: Express.Multer.File[]; video?: Express.Multer.File[] },
   ) {
-    if (!files.video || !files.video[0]) {
-      throw new BadRequestException('video file is required');
-    }
-    await this.videosService.updateVideoMedia(
-      videoId,
-      channel.id,
-      files.video[0],
-      user.userId,
-    );
-
-    return {
-      message: 'Video media updated successfully',
-      videoId,
-      channelId: channel.id,
-    };
+    return this.videosService.getUpdateVideoMediaSignature(videoId, channel.id);
   }
 
   // ========================== delete Video ==========================
@@ -387,22 +333,5 @@ export class VideosOwnerController {
       channel.id,
     );
     return new SuccessResponseShape(videoServiceData);
-  }
-
-  @Post('upload-completed')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
-  @UseInterceptors(ChannelPreloadInterceptor)
-  @ApiResponse({
-    status: 201,
-    description: 'Video upload completed successfully',
-    type: UploadCompletedResponseDto,
-  })
-  async uploadCompleted(
-    @Body()
-    uploadCompletedDto: UploadCompletedDto,
-    @Channel() channel: ChannelRequestData,
-  ) {
-    return this.videosService.uploadCompleted(channel.id, uploadCompletedDto);
   }
 }
