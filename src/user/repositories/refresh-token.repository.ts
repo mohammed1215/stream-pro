@@ -15,9 +15,22 @@ export class RefreshTokenRepository {
     });
   }
 
+  async findBySessionId(sessionId: string) {
+    return this.prisma.refreshToken.findUnique({
+      where: { id: sessionId },
+      include: { user: true },
+    });
+  }
+
   async findByUserId(userId: string) {
     return this.prisma.refreshToken.findMany({
       where: { userId },
+    });
+  }
+
+  async findByUserId2(userId: string) {
+    return this.prisma.refreshToken.findMany({
+      where: { userId, isRevoked: false, expiresAt: { gt: new Date() } },
     });
   }
 

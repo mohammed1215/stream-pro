@@ -255,8 +255,6 @@ export class VideosOwnerController {
   }
 
   // ==================== Video / Thumbnail upload completed ====================
-  // Split into two endpoints - see VideosService for why. The old unified
-  // `POST upload-completed` route was removed in favor of these.
 
   @Post(':videoId/video-upload-completed')
   @UseGuards(AuthGuard)

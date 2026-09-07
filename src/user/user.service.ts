@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -230,15 +231,21 @@ export class UserService {
     return { accessToken, refreshToken: newRefreshToken };
   }
 
-  async logout(refreshToken?: string) {
-    if (!refreshToken)
-      throw new UnauthorizedException('Refresh token not found');
-    const tokenHash = this.hashToken(refreshToken);
+  async logout(tokenHash?: string) {
+    if (!tokenHash) throw new UnauthorizedException('Refresh token not found');
     return this.refreshTokenRepo.revoke(tokenHash);
   }
 
   async logoutFromAllDevices(userId: string) {
     return this.refreshTokenRepo.revokeAllForUser(userId);
+  }
+
+  async revokeSession(userId: string, sessionId: string) {
+    const tokenRecord = await this.refreshTokenRepo.findBySessionId(sessionId);
+    if (!tokenRecord || tokenRecord.userId !== userId) {
+      throw new NotFoundException('Session not found');
+    }
+    return this.refreshTokenRepo.revoke(tokenRecord.tokenHash);
   }
 
   async updateProfile(
@@ -300,6 +307,26 @@ export class UserService {
         avatarUrl: user.avatarUrl,
       },
     };
+  }
+
+  getActiveSessions(userId: string) {
+    return this.refreshTokenRepo.findByUserId2(userId);
+  }
+
+  async getActiveSession(userId: string, sessionId: string) {
+    const refreshTokenRecord =
+      await this.refreshTokenRepo.findByToken(sessionId);
+
+    if (
+      !refreshTokenRecord ||
+      refreshTokenRecord.isRevoked ||
+      !refreshTokenRecord.expiresAt ||
+      refreshTokenRecord.expiresAt < new Date() ||
+      userId !== refreshTokenRecord.userId
+    ) {
+      throw new NotFoundException('token not found');
+    }
+    return refreshTokenRecord;
   }
 
   private generateRefreshToken() {

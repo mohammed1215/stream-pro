@@ -167,6 +167,28 @@ export class UserController {
     return this.userService.logoutFromAllDevices(user.userId);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @Get('sessions')
+  async getActiveSessions(@User() user: JwtUserPayload) {
+    const sessions = await this.userService.getActiveSessions(user.userId);
+    return new SuccessResponseShape(sessions);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @Get('sessions/:refreshToken')
+  async getSession(
+    @User() user: JwtUserPayload,
+    @Param('refreshToken') sessionId: string,
+  ) {
+    const session = await this.userService.getActiveSession(
+      user.userId,
+      sessionId,
+    );
+
+    return session;
+  }
   @ApiCookieAuth('refreshToken')
   @Post('auth/refresh')
   async refreshToken(
@@ -187,6 +209,15 @@ export class UserController {
       secure: process.env.NODE_ENV === 'production',
     });
     return { accessToken };
+  }
+
+  @Post('sessions/:sessionId/revoke')
+  @UseGuards(AuthGuard)
+  revokeSession(
+    @User() user: JwtUserPayload,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.userService.revokeSession(user.userId, sessionId);
   }
 
   @Patch('profile/me')
