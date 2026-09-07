@@ -304,7 +304,6 @@ export class VideosOwnerController {
   }
 
   // ======================== Update Video Media ==========================
-  @ApiConsumes('multipart/form-data')
   @Patch(':videoId/media/signature')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()

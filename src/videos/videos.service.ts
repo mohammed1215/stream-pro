@@ -331,44 +331,44 @@ export class VideosService {
   //   return newVideo;
   // }
 
-  async updateVideoMedia(
-    videoId: string,
-    channelId: string,
-    video: Express.Multer.File,
-    userId: string,
-  ): Promise<VideoDetailsOwner> {
-    if (!video) {
-      throw new BadRequestException('video file is required');
-    }
+  // async updateVideoMedia(
+  //   videoId: string,
+  //   channelId: string,
+  //   video: Express.Multer.File,
+  //   userId: string,
+  // ): Promise<VideoDetailsOwner> {
+  //   if (!video) {
+  //     throw new BadRequestException('video file is required');
+  //   }
 
-    // Verify ownership BEFORE touching Cloudinary
-    const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
-      videoId,
-      userId,
-    );
-    if (!oldVideo) {
-      throw new NotFoundException('video not found or not owned by channel');
-    }
+  //   // Verify ownership BEFORE touching Cloudinary
+  //   const oldVideo = await this.videoRepo.findOneOwnerVideoDetails(
+  //     videoId,
+  //     userId,
+  //   );
+  //   if (!oldVideo) {
+  //     throw new NotFoundException('video not found or not owned by channel');
+  //   }
 
-    const uploadResult = await this.cloudinaryService.uploadVideo(
-      video,
-      videoId,
-      `channels/${channelId}/videos`,
-    );
+  //   const uploadResult = await this.cloudinaryService.uploadVideo(
+  //     video,
+  //     videoId,
+  //     `channels/${channelId}/videos`,
+  //   );
 
-    const newVideo = await this.videoRepo.updateVideoDetails(
-      videoId,
-      channelId,
-      { videoUrl: uploadResult.secure_url, publicId: uploadResult.public_id },
-      videoDetailsOwnerSelectFor(userId),
-    );
+  //   const newVideo = await this.videoRepo.updateVideoDetails(
+  //     videoId,
+  //     channelId,
+  //     { videoUrl: uploadResult.secure_url, publicId: uploadResult.public_id },
+  //     videoDetailsOwnerSelectFor(userId),
+  //   );
 
-    if (!newVideo) {
-      throw new NotFoundException('video not found or not owned by channel');
-    }
+  //   if (!newVideo) {
+  //     throw new NotFoundException('video not found or not owned by channel');
+  //   }
 
-    return newVideo;
-  }
+  //   return newVideo;
+  // }
 
   // async getUploadSignature(channelId: string, videoId: string, folder: string) {
   //   const video = await this.videoRepo.findById(videoId);
