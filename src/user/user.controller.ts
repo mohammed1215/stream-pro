@@ -26,11 +26,17 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
 import { AuthGuard } from './guards/AuthGuard';
 import { User } from '../decorators/user-decorator';
-import { ProfileResponseDto } from './dto/profile-response.dto';
+import {
+  ProfileResponseDto,
+  SuccessProfileResponseDto,
+} from './dto/profile-response.dto';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiCookieAuth,
   ApiExtraModels,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { ApiSuccessResponse } from '../decorators/api-success-response-decorator';
@@ -118,7 +124,7 @@ export class UserController {
   @Get('profile/me')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiSuccessResponse(ProfileResponseDto)
+  @ApiResponse({ type: SuccessProfileResponseDto })
   async getProfile(@User() user: JwtUserPayload) {
     const data = await this.userService.getProfile(user.userId);
     if (!data) throw new NotFoundException('Profile Not Found');
@@ -220,9 +226,22 @@ export class UserController {
     return this.userService.revokeSession(user.userId, sessionId);
   }
 
+  @ApiConsumes('multipart/form-data')
   @Patch('profile/me')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        avatar: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
   @UseInterceptors(FileInterceptor('avatar'))
   async updateProfile(
     @User() user: JwtUserPayload,
@@ -243,7 +262,9 @@ export class UserController {
       updateUserDto,
       avatarFile,
     );
-    return new SuccessResponseShape<ProfileResponseDto>(updatedProfile);
+    return new SuccessResponseShape<Omit<ProfileResponseDto, 'totalViews'>>(
+      updatedProfile,
+    );
   }
 
   @Delete('profile/me')

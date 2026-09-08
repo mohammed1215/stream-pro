@@ -19,6 +19,7 @@ import { RefreshTokenRepository } from './repositories/refresh-token.repository'
 import * as crypto from 'crypto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { VideosService } from '../videos/videos.service';
 
 @Injectable()
 export class UserService {
@@ -30,6 +31,7 @@ export class UserService {
     private readonly firebaseService: FirebaseService,
     private readonly refreshTokenRepo: RefreshTokenRepository,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly videoService: VideosService,
   ) {
     this.googleClient = new OAuth2Client(
       config.get('GOOGLE_CLIENT_ID'),
@@ -166,8 +168,36 @@ export class UserService {
 
   // ====================== Profile ========================
   async getProfile(userId: string) {
-    const user = await this.userRepo.findById(userId);
-    return user;
+    const user = await this.userRepo.findById(userId, {
+      name: true,
+      avatarUrl: true,
+      id: true,
+      email: true,
+      createdAt: true,
+      updatedAt: true,
+      channel: {
+        select: { _count: { select: { videos: true } }, id: true },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (!user.channel) {
+      throw new NotFoundException('User channel not found');
+    }
+    const totalViews = await this.videoService.getTotalViewsOfUserVideos(
+      user.channel?.id,
+    );
+
+    const {
+      channel: {
+        _count: { videos: videoCount },
+      },
+      ...userData
+    } = user;
+
+    return { ...userData, videoCount, totalViews: totalViews._sum.views || 0 };
   }
   findAll() {
     return;

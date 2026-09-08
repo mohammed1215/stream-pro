@@ -32,18 +32,14 @@ export class UserRepository {
     }
   }
 
-  async findById(id: string) {
+  async findById<T extends Prisma.UserSelect>(
+    id: string,
+    select?: T,
+  ): Promise<Prisma.UserGetPayload<{ select: T }> | null> {
     return this.prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        avatarUrl: true,
-        name: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+      select,
+    }) as Promise<Prisma.UserGetPayload<{ select: T }> | null>;
   }
 
   async findByEmail(email: string) {

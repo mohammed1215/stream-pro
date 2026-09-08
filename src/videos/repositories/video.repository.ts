@@ -63,6 +63,13 @@ export class VideoRepository {
     return videos;
   }
 
+  getTotalViewsOfUserVideos(channelId: string) {
+    return this.prisma.video.aggregate({
+      where: { channelId, isDeleted: false },
+      _sum: { views: true },
+    });
+  }
+
   async findAllVideosOfOwnerChannel(
     channelId: string,
     pageNumber: number,

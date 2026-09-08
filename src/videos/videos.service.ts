@@ -254,6 +254,10 @@ export class VideosService {
     return { message: 'video removed successfully', videoId, channelId };
   }
 
+  getTotalViewsOfUserVideos(channelId: string) {
+    return this.videoRepo.getTotalViewsOfUserVideos(channelId);
+  }
+
   // =============================== Update Video Details ==============================
 
   async updateVideoDetails(
