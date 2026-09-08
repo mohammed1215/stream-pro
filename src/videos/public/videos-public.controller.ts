@@ -24,6 +24,7 @@ import {
 } from '../dto/video-response.dto';
 import { VideoDetailsResponseDto } from '../dto/video-details.dto';
 import { SuccessResponseShape } from '../../user/dto/ResponseShape.dto';
+import { VideoStatus } from '../../generated/prisma/client';
 
 @ApiTags('videos')
 @Controller('videos')
@@ -139,6 +140,15 @@ export class VideosPublicController {
       videoData.isLikedByUser,
       videoData.createdAt,
     );
+  }
+
+  @Get(':videoId/related')
+  @UseGuards(OptionalAuthGuard)
+  async getRelatedVideos(
+    @Param('videoId') videoId: string,
+    @User() user?: JwtUserPayload,
+  ): Promise<VideoResponseDto[]> {
+    return this.videosService.getRelatedVideos(videoId);
   }
 
   // ========================== update Video views ==========================

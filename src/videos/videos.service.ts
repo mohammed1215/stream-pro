@@ -16,6 +16,7 @@ import { buildPaginationMeta } from '../utils/pagination.util';
 import { VideoSortByEnum, VideoStatusEnum } from './enum/enums';
 import { VideoUploadCompletedDto } from './dto/video-upload-completed.dto';
 import { ThumbnailUploadCompletedDto } from './dto/thumbnail-upload-completed.dto';
+import { VideoResponseDto } from './dto/video-response.dto';
 
 type VideoDetailsOwner = Prisma.VideoGetPayload<{
   select: ReturnType<typeof videoDetailsOwnerSelectFor>;
@@ -48,6 +49,25 @@ export class VideosService {
       signatureVideoData,
       signatureThumbnailData,
     };
+  }
+
+  async getRelatedVideos(videoId: string) {
+    const videos = await this.videoRepo.getRelatedVideos(videoId);
+    return videos.map(
+      (video) =>
+        new VideoResponseDto(
+          video.id,
+          video.title,
+          video.videoUrl,
+          video.hlsUrl,
+          video.thumbnailUrl,
+          video.channel.id,
+          video.channel.title,
+          video.channel.channelImageUrl,
+          video.duration,
+          video.views,
+        ),
+    );
   }
 
   // =========================== Upload Completed ===========================

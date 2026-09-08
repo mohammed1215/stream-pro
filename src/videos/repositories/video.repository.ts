@@ -70,6 +70,70 @@ export class VideoRepository {
     });
   }
 
+  async getRelatedVideos(videoId: string) {
+    const currentVideo = await this.prisma.video.findUnique({
+      where: { id: videoId },
+      select: { channelId: true },
+    });
+
+    if (!currentVideo) return [];
+    // هات الفيديوهات بتاعت نفس القناه
+    const videosBySameChannel = await this.prisma.video.findMany({
+      where: {
+        channelId: currentVideo.channelId,
+        isDeleted: false,
+        isPublished: true,
+        id: { not: videoId },
+      },
+      take: 20,
+      select: VIDEO_LIST_SELECT,
+    });
+
+    // هات الفيديوهات اللي ليها نفس الtag
+    // ايه هي الفيديوهات اللي  الناس شافوها مع الفيديو ده
+    const viewers = await this.prisma.watchHistory.findMany({
+      where: { videoId },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+
+    const userIds = viewers.map((v) => v.userId);
+
+    const coWatchedVideos = userIds.length
+      ? await this.prisma.video.findMany({
+          where: {
+            isDeleted: false,
+            isPublished: true,
+            watchHistories: { some: { userId: { in: userIds } } },
+            id: { not: videoId },
+          },
+          take: 20,
+          select: VIDEO_LIST_SELECT,
+        })
+      : [];
+    const scoreMap = new Map<
+      string,
+      { video: (typeof videosBySameChannel)[0]; score: number }
+    >();
+
+    for (const video of videosBySameChannel) {
+      scoreMap.set(video.id, { video, score: 30 });
+    }
+
+    for (const video of coWatchedVideos) {
+      scoreMap.set(video.id, {
+        video,
+        score: (scoreMap.get(video.id)?.score || 0) + 40,
+      });
+    }
+    // دمج الفيديوهات اللي من نفس القناه والفيديوهات اللي اتشافوا مع الفيديو ده
+    const relatedVideos = Array.from(scoreMap.values())
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.video);
+
+    return relatedVideos;
+  }
+
   async findAllVideosOfOwnerChannel(
     channelId: string,
     pageNumber: number,
