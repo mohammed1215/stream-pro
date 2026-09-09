@@ -14,6 +14,14 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class VideoRepository {
+  private SCORE_WEIGHTS = {
+    SAME_CHANNEL: 30,
+    CO_WATCHED: 40,
+    SAME_TAGS: 20,
+    SAME_CATEGORY: 10,
+  } as const;
+
+  private RELATED_VIDEOS_LIMIT = 20;
   constructor(private readonly prisma: PrismaService) {}
 
   async create(
@@ -79,29 +87,52 @@ export class VideoRepository {
   async getRelatedVideos(videoId: string) {
     const currentVideo = await this.prisma.video.findUnique({
       where: { id: videoId },
-      select: { channelId: true },
+      select: { channelId: true, categoryId: true },
     });
 
     if (!currentVideo) return [];
-    // هات الفيديوهات بتاعت نفس القناه
-    const videosBySameChannel = await this.prisma.video.findMany({
-      where: {
-        channelId: currentVideo.channelId,
-        isDeleted: false,
-        isPublished: true,
-        id: { not: videoId },
-      },
-      take: 20,
-      select: VIDEO_LIST_SELECT,
-    });
 
-    // هات الفيديوهات اللي ليها نفس الtag
-    // ايه هي الفيديوهات اللي  الناس شافوها مع الفيديو ده
-    const viewers = await this.prisma.watchHistory.findMany({
-      where: { videoId },
-      select: { userId: true },
-      distinct: ['userId'],
-    });
+    const [
+      videosBySameChannel,
+      videosBySameTags,
+      viewers,
+      videosBySameCategory,
+    ] = await Promise.all([
+      this.prisma.video.findMany({
+        where: {
+          channelId: currentVideo.channelId,
+          isDeleted: false,
+          isPublished: true,
+          id: { not: videoId },
+        },
+        take: 20,
+        select: VIDEO_LIST_SELECT,
+      }),
+      this.prisma.video.findMany({
+        where: {
+          tags: { some: { videos: { some: { id: videoId } } } },
+          id: { not: videoId },
+          isDeleted: false,
+          isPublished: true,
+        },
+        take: 20,
+        select: VIDEO_LIST_SELECT,
+      }),
+      this.prisma.watchHistory.findMany({
+        where: { videoId },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      this.prisma.video.findMany({
+        where: {
+          categoryId: currentVideo.categoryId,
+          isDeleted: false,
+          isPublished: true,
+        },
+        take: 20,
+        select: VIDEO_LIST_SELECT,
+      }),
+    ]);
 
     const userIds = viewers.map((v) => v.userId);
 
@@ -117,27 +148,43 @@ export class VideoRepository {
           select: VIDEO_LIST_SELECT,
         })
       : [];
+
     const scoreMap = new Map<
       string,
       { video: (typeof videosBySameChannel)[0]; score: number }
     >();
 
     for (const video of videosBySameChannel) {
-      scoreMap.set(video.id, { video, score: 30 });
+      scoreMap.set(video.id, { video, score: this.SCORE_WEIGHTS.SAME_CHANNEL });
     }
-
     for (const video of coWatchedVideos) {
       scoreMap.set(video.id, {
         video,
-        score: (scoreMap.get(video.id)?.score || 0) + 40,
+        score:
+          (scoreMap.get(video.id)?.score ?? 0) + this.SCORE_WEIGHTS.CO_WATCHED,
       });
     }
-    // دمج الفيديوهات اللي من نفس القناه والفيديوهات اللي اتشافوا مع الفيديو ده
-    const relatedVideos = Array.from(scoreMap.values())
-      .sort((a, b) => b.score - a.score)
-      .map((entry) => entry.video);
+    for (const video of videosBySameTags) {
+      scoreMap.set(video.id, {
+        video,
+        score:
+          (scoreMap.get(video.id)?.score ?? 0) + this.SCORE_WEIGHTS.SAME_TAGS,
+      });
+    }
 
-    return relatedVideos;
+    for (const video of videosBySameCategory) {
+      scoreMap.set(video.id, {
+        video,
+        score:
+          (scoreMap.get(video.id)?.score ?? 0) +
+          this.SCORE_WEIGHTS.SAME_CATEGORY,
+      });
+    }
+
+    return Array.from(scoreMap.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, this.RELATED_VIDEOS_LIMIT)
+      .map((entry) => entry.video);
   }
 
   async findAllVideosOfOwnerChannel(
