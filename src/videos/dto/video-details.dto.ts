@@ -1,6 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { VideoResponseDto } from './video-response.dto';
 
+class Tag {
+  id!: string;
+  name!: string;
+}
 export class VideoDetailsResponseDto extends VideoResponseDto {
   @ApiProperty({ nullable: true }) description: string | null;
   @ApiProperty() commentsCount: number;
@@ -8,6 +12,7 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
   @ApiProperty() channelSubscribersCount: number;
   @ApiProperty({ nullable: true }) isSubscribed: boolean | null;
   @ApiProperty({ nullable: true }) isLiked: boolean | null;
+  @ApiProperty() tags!: Tag[];
   @ApiProperty() createdAt: Date;
 
   constructor(
@@ -27,6 +32,7 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
     channelSubscribersCount: number,
     isSubscribed: boolean | null,
     isLiked: boolean | null,
+    tags: Tag[],
     createdAt: Date,
   ) {
     super(
@@ -47,6 +53,7 @@ export class VideoDetailsResponseDto extends VideoResponseDto {
     this.channelSubscribersCount = channelSubscribersCount;
     this.isSubscribed = isSubscribed;
     this.isLiked = isLiked;
+    this.tags = tags;
     this.createdAt = createdAt;
   }
 }

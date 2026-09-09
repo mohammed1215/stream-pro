@@ -6,6 +6,7 @@ import { ChannelRepository } from '../channel/repositories/channel.repository';
 import { VideoProcessingService } from '../video-processing/video-processing.service';
 import { VideosPublicController } from './public/videos-public.controller';
 import { VideosOwnerController } from './owner/videos-owner.controller';
+import { TagsModule } from '../tags/tags.module';
 
 @Module({
   controllers: [VideosPublicController, VideosOwnerController],
@@ -17,5 +18,6 @@ import { VideosOwnerController } from './owner/videos-owner.controller';
     VideoProcessingService,
   ],
   exports: [VideosService, VideoRepository],
+  imports: [TagsModule],
 })
 export class VideosModule {}

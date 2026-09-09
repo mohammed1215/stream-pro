@@ -17,6 +17,7 @@ import { VideoSortByEnum, VideoStatusEnum } from './enum/enums';
 import { VideoUploadCompletedDto } from './dto/video-upload-completed.dto';
 import { ThumbnailUploadCompletedDto } from './dto/thumbnail-upload-completed.dto';
 import { VideoResponseDto } from './dto/video-response.dto';
+import { TagsService } from '../tags/tags.service';
 
 type VideoDetailsOwner = Prisma.VideoGetPayload<{
   select: ReturnType<typeof videoDetailsOwnerSelectFor>;
@@ -28,10 +29,19 @@ export class VideosService {
     private readonly videoRepo: VideoRepository,
     private readonly cloudinaryService: CloudinaryService,
     private readonly videoProcessingService: VideoProcessingService,
+    private readonly tagsService: TagsService,
   ) {}
 
   async create(channelId: string, createVideoDto: CreateVideoDto) {
-    const video = await this.videoRepo.create(createVideoDto, channelId);
+    const { tags, ...rest } = createVideoDto;
+    const normalizedTags = await this.tagsService.resolveTagsForVideo(
+      tags || [],
+    );
+    const video = await this.videoRepo.create(
+      { ...rest },
+      normalizedTags,
+      channelId,
+    );
 
     const signatureVideoData = this.cloudinaryService.getVideoUploadSignature(
       video.id,
@@ -296,11 +306,17 @@ export class VideosService {
     updateVideoDto: UpdateVideoDto,
     userId: string,
   ): Promise<VideoDetailsOwner> {
+    const { tags, ...rest } = updateVideoDto;
+    const normalizedTags = await this.tagsService.resolveTagsForVideo(
+      tags || [],
+    );
+
     const video = await this.videoRepo.updateVideoDetails(
       videoId,
       channelId,
-      updateVideoDto,
+      { ...rest },
       videoDetailsOwnerSelectFor(userId),
+      normalizedTags,
     );
 
     if (!video) {

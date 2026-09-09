@@ -16,13 +16,19 @@ import { randomUUID } from 'crypto';
 export class VideoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createVideoDto: CreateVideoDto, channelId: string) {
+  async create(
+    createVideoDto: CreateVideoDto,
+    tags: { id: string; name: string }[],
+    channelId: string,
+  ) {
     const videoId = randomUUID();
     const publicId = `channels/${channelId}/videos/${videoId}`;
 
     const video = await this.prisma.video.create({
       data: {
         ...createVideoDto,
+        categoryId: createVideoDto.categoryId,
+        tags: { connect: tags.map((tag) => ({ id: tag.id })) },
         duration: 0,
         size: 0,
         channelId,
@@ -200,6 +206,7 @@ export class VideoRepository {
           videoUrl: true,
           hlsUrl: true,
           thumbnailUrl: true,
+          tags: { select: { id: true, name: true } },
           likes: {
             where: { userId },
             select: { id: true },
@@ -393,11 +400,17 @@ export class VideoRepository {
     channelId: string,
     data: Prisma.VideoUpdateInput,
     select: S,
+    tags?: { id: string; name: string }[],
   ): Promise<Prisma.VideoGetPayload<{ select: S }> | null> {
     try {
       return await this.prisma.video.update({
         where: { id: videoId, channelId, isDeleted: false },
-        data,
+        data: {
+          ...data,
+          tags: tags
+            ? { set: [], connect: tags.map((tag) => ({ id: tag.id })) }
+            : undefined,
+        },
         select,
       });
     } catch (err) {

@@ -208,6 +208,7 @@ export class VideosOwnerController {
       videoServiceData.channel._count.subscriptions,
       null,
       null,
+      videoServiceData.tags,
       videoServiceData.createdAt,
     );
 

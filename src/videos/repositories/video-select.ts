@@ -37,6 +37,7 @@ export const VIDEO_DETAILS_SELECT = {
   hlsUrl: true,
   createdAt: true,
   thumbnailUrl: true,
+  tags: { select: { id: true, name: true } },
   channel: {
     select: {
       id: true,
@@ -69,6 +70,7 @@ export const VIDEO_DETAILS_OWNER_SELECT = {
 export function videoDetailsOwnerSelectFor(userId: string) {
   return {
     ...VIDEO_DETAILS_OWNER_SELECT,
+    tags: { select: { id: true, name: true } },
     likes: {
       where: { userId },
       select: { id: true },

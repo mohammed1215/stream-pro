@@ -130,6 +130,7 @@ export class VideosPublicController {
       channelDetails._count.subscriptions,
       channelDetails.isSubscribed,
       videoData.isLikedByUser,
+      videoData.tags,
       videoData.createdAt,
     );
   }
