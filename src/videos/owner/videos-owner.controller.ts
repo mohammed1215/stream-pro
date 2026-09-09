@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   DefaultValuePipe,
@@ -11,14 +10,11 @@ import {
   Patch,
   Post,
   Query,
-  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiBody,
-  ApiConsumes,
   ApiCreatedResponse,
   ApiOperation,
   ApiQuery,
@@ -31,7 +27,6 @@ import { VideosService } from '../videos.service';
 import { SuccessResponseShape } from '../../user/dto/ResponseShape.dto';
 import { type ChannelRequestData } from '../../types/channel.types';
 import { CreateVideoDto } from '../dto/create-video.dto';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { VideoCreatedResponseDto } from '../dto/create-video-response.dto';
 import { Channel } from '../../decorators/channel-decorator';
 import {
@@ -44,11 +39,8 @@ import { VideoDetailsResponseDto } from '../dto/video-details.dto';
 import { JwtUserPayload } from '../../user/user.service';
 import { User } from '../../decorators/user-decorator';
 import { VideoDetailsOwnerResponseDto } from '../dto/responses/owner/get-video-details.dto';
-import { memoryStorage } from 'multer';
 import { VideoUploadCompletedDto } from '../dto/video-upload-completed.dto';
 import { ThumbnailUploadCompletedDto } from '../dto/thumbnail-upload-completed.dto';
-
-const videoUploadStorage = memoryStorage();
 
 @ApiTags('Owner-Videos')
 @ApiBearerAuth()

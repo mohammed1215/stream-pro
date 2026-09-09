@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VideosService } from '../videos.service';
 import { SearchVideoDto } from '../dto/search-video.dto';
@@ -24,7 +16,6 @@ import {
 } from '../dto/video-response.dto';
 import { VideoDetailsResponseDto } from '../dto/video-details.dto';
 import { SuccessResponseShape } from '../../user/dto/ResponseShape.dto';
-import { VideoStatus } from '../../generated/prisma/client';
 
 @ApiTags('videos')
 @Controller('videos')

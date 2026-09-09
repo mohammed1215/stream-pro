@@ -103,13 +103,38 @@ model Video {
 
   videoStatus VideoStatus @default(PROCESSING)
 
-  channelId      String
-  channel        Channel         @relation(references: [id], fields: [channelId], onDelete: Cascade)
+  channelId  String
+  channel    Channel   @relation(references: [id], fields: [channelId], onDelete: Cascade)
+  categoryId String?
+  category   Category? @relation(references: [id], fields: [categoryId], onDelete: Restrict)
+
   comments       Comment[]
   likes          Like[]
   watchLaters    WatchLater[]
   playlistVideos PlaylistVideo[]
   watchHistories WatchHistory[]
+
+  tags Tag[]
+
+  @@index([categoryId])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  videos Video[]
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  videos Video[]
 }
 
 enum VideoStatus {
