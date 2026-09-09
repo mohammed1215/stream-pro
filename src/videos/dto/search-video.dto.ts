@@ -26,4 +26,9 @@ export class SearchVideoDto {
   @Min(1)
   @Max(50)
   pageSize?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  category?: string;
 }

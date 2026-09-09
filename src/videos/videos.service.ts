@@ -225,8 +225,18 @@ export class VideosService {
     return videoData;
   }
 
-  async searchVideos(query: string, pageNumber: number, pageSize: number) {
-    const data = await this.videoRepo.searchVideos(query, pageNumber, pageSize);
+  async searchVideos(
+    query: string,
+    pageNumber: number,
+    pageSize: number,
+    category?: string,
+  ) {
+    const data = await this.videoRepo.searchVideos(
+      query,
+      pageNumber,
+      pageSize,
+      category,
+    );
     return { ...data, pageNumber, pageSize };
   }
 

@@ -322,7 +322,12 @@ export class VideoRepository {
     });
   }
 
-  async searchVideos(query: string, pageNumber: number, pageSize: number) {
+  async searchVideos(
+    query: string,
+    pageNumber: number,
+    pageSize: number,
+    category?: string,
+  ) {
     const skip = (pageNumber - 1) * pageSize;
     const items = await this.prisma.video.findMany({
       where: {
@@ -330,6 +335,8 @@ export class VideoRepository {
           { title: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
         ],
+        category:
+          category && category !== 'All' ? { name: category } : undefined,
         isDeleted: false,
         isPublished: true,
       },

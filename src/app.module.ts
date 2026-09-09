@@ -25,6 +25,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { WeebhooksModule } from './weebhooks/weebhooks.module';
 import { WebhooksController } from './webhooks/webhooks.controller';
+import { CategoriesModule } from './categories/categories.module';
 
 export const VIDEO_STORAGE = memoryStorage();
 
@@ -74,6 +75,8 @@ export const VIDEO_STORAGE = memoryStorage();
     ]),
 
     WeebhooksModule,
+
+    CategoriesModule,
   ],
   controllers: [AppController, WebhooksController],
   providers: [

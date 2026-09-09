@@ -30,12 +30,13 @@ export class VideosPublicController {
     type: PaginatedSearchVideoResponseDto,
   })
   async searchVideos(@Query() searchVideoDto: SearchVideoDto) {
-    const { query, pageNumber = 1, pageSize = 10 } = searchVideoDto;
+    const { query, pageNumber = 1, pageSize = 10, category } = searchVideoDto;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { items, totalCount } = await this.videosService.searchVideos(
       query,
       pageNumber,
       pageSize,
+      category,
     );
     const videoList = items.map((video) => {
       return new SearchVideoResponseDto(
@@ -52,7 +53,7 @@ export class VideosPublicController {
         video.updatedAt,
       );
     });
-    return new PaginatedSearchVideoResponseDto(videoList, pageNumber, pageSize);
+    return new PaginatedSearchVideoResponseDto(videoList, pageSize, pageNumber);
   }
 
   @Get('channel/:channelId')
