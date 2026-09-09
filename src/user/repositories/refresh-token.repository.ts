@@ -115,4 +115,11 @@ export class RefreshTokenRepository {
       data: { isRevoked: true },
     });
   }
+
+  invalidateDeviceTokens(deviceTokens: string[]) {
+    return this.prisma.refreshToken.updateMany({
+      where: { deviceToken: { in: deviceTokens } },
+      data: { isRevoked: true },
+    });
+  }
 }

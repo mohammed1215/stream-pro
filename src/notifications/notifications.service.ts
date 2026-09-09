@@ -40,7 +40,7 @@ export class NotificationsService {
       await this.refreshTokenRepo.findActiveDeviceTokensByUserId(user.id);
 
     if (deviceTokens.length > 0) {
-      await Promise.all(
+      const results = await Promise.allSettled(
         deviceTokens.map((token) =>
           this.firebaseService.sendPushNotification(
             token,
@@ -53,6 +53,15 @@ export class NotificationsService {
           ),
         ),
       );
+
+      const staleTokens = deviceTokens.filter((token, i) => {
+        const result = results[i];
+        return result.status === 'fulfilled' && result.value.staleToken;
+      });
+
+      if (staleTokens.length > 0) {
+        await this.refreshTokenRepo.invalidateDeviceTokens(staleTokens);
+      }
     }
 
     return notification;

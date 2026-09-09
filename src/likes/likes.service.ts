@@ -17,13 +17,17 @@ export class LikesService {
       throw new NotFoundException(
         'Video not found or already liked by the user',
       );
-    await this.notificationService.create({
-      actorId: userId,
-      recipientId: like.video.channel.userId,
-      contextId: like.videoId,
-      message: `User ${like.user.name} liked your video ${like.video.title}`,
-      type: NotificationType.LIKE,
-    });
+    this.notificationService
+      .create({
+        actorId: userId,
+        recipientId: like.video.channel.userId,
+        contextId: like.videoId,
+        message: `User ${like.user.name} liked your video ${like.video.title}`,
+        type: NotificationType.LIKE,
+      })
+      .catch((error) => {
+        console.error('Failed to send like notification:', error);
+      });
 
     return like;
   }

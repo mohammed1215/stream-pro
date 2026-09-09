@@ -43,9 +43,17 @@ export class FirebaseService implements OnModuleInit {
       const messaging = getMessaging(this.app);
       const response = await messaging.send(message);
       return { success: true, messageId: response };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      throw new InternalServerErrorException(`FCM Delivery Failed: ${message}`);
+    } catch (error: any) {
+      const errorCode = error?.errorInfo?.code ?? error?.code;
+
+      if (
+        errorCode === 'messaging/registration-token-not-registered' ||
+        errorCode === 'messaging/invalid-registration-token'
+      ) {
+        return { success: false, staleToken: true };
+      }
+      console.error('FCM delivery failed:', error);
+      return { success: false, staleToken: false };
     }
   }
 }
