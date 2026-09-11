@@ -23,13 +23,17 @@ export class SubscriptionsService {
         },
       );
 
-      await this.notificationService.create({
-        actorId: userId,
-        recipientId: subscription.channel.userId,
-        contextId: subscription.id,
-        message: `You have subscribed to ${subscription.channel.title}`,
-        type: NotificationType.SUBSCRIPTION,
-      });
+      this.notificationService
+        .create({
+          actorId: userId,
+          recipientId: subscription.channel.userId,
+          contextId: subscription.id,
+          message: `You have subscribed to ${subscription.channel.title}`,
+          type: NotificationType.SUBSCRIPTION,
+        })
+        .catch((error) => {
+          console.error('Failed to send subscription notification:', error);
+        });
 
       return subscription;
     } catch (error) {

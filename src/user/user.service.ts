@@ -5,7 +5,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { UserRepository } from './repositories/user.repository';
 import bcrypt from 'bcrypt';
 import { LoginRequestDto } from './dto/login-request.dto';
@@ -198,21 +197,6 @@ export class UserService {
     } = user;
 
     return { ...userData, videoCount, totalViews: totalViews._sum.views || 0 };
-  }
-  findAll() {
-    return;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
-
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
   }
 
   // ========================= GENERATE AUTH TOKENS ============================

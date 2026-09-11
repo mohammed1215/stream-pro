@@ -22,13 +22,17 @@ export class CommentsService {
       video: { connect: { id: videoId } },
     });
 
-    await this.notificationService.create({
-      actorId: userId,
-      recipientId: comment.video.channel.userId,
-      contextId: comment.id,
-      message: comment.content,
-      type: NotificationType.COMMENT,
-    });
+    this.notificationService
+      .create({
+        actorId: userId,
+        recipientId: comment.video.channel.userId,
+        contextId: comment.id,
+        message: comment.content,
+        type: NotificationType.COMMENT,
+      })
+      .catch((error) => {
+        console.error('Failed to send comment notification:', error);
+      });
 
     return comment;
   }

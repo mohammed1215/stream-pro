@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VideosService } from '../videos.service';
 import { SearchVideoDto } from '../dto/search-video.dto';
@@ -16,11 +24,16 @@ import {
 } from '../dto/video-response.dto';
 import { VideoDetailsResponseDto } from '../dto/video-details.dto';
 import { SuccessResponseShape } from '../../user/dto/ResponseShape.dto';
-
+import { RedisService } from '../../redis/redis.service';
+import type { Request } from 'express';
+import * as crypto from 'crypto';
 @ApiTags('videos')
 @Controller('videos')
 export class VideosPublicController {
-  constructor(private readonly videosService: VideosService) {}
+  constructor(
+    private readonly videosService: VideosService,
+    private readonly redisService: RedisService,
+  ) {}
 
   // ========================== search video ==========================
   @Get('search')
@@ -31,7 +44,6 @@ export class VideosPublicController {
   })
   async searchVideos(@Query() searchVideoDto: SearchVideoDto) {
     const { query, pageNumber = 1, pageSize = 10, category } = searchVideoDto;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { items, totalCount } = await this.videosService.searchVideos(
       query,
       pageNumber,
@@ -53,7 +65,12 @@ export class VideosPublicController {
         video.updatedAt,
       );
     });
-    return new PaginatedSearchVideoResponseDto(videoList, pageSize, pageNumber);
+    return new PaginatedSearchVideoResponseDto(
+      videoList,
+      pageSize,
+      pageNumber,
+      totalCount,
+    );
   }
 
   @Get('channel/:channelId')
@@ -146,8 +163,42 @@ export class VideosPublicController {
 
   // ========================== update Video views ==========================
   @Post(':videoId/views')
-  async recordView(@Param('videoId') videoId: string) {
+  @UseGuards(OptionalAuthGuard)
+  async recordView(
+    @Param('videoId') videoId: string,
+    @Req() req: Request,
+    @User() user?: JwtUserPayload,
+  ) {
+    const identifier = this.getViewerIdentifier(req, user);
+
+    const isAllowed = await this.redisService.recordViewWithThrottle(
+      videoId,
+      identifier,
+    );
+    if (!isAllowed) {
+      return { recorded: false, message: 'View already counted recently' };
+    }
     await this.videosService.updateViews(videoId);
     return new SuccessResponseShape({ recorded: true });
+  }
+
+  private getViewerIdentifier(req: Request, user?: JwtUserPayload): string {
+    if (user) {
+      return `user:${user.userId}`;
+    }
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip =
+      typeof forwarded === 'string'
+        ? forwarded.split(',')[0].trim()
+        : req.socket.remoteAddress || 'unknown-ip';
+    const userAgent = req.headers['user-agent'] || 'unknown-ua';
+    const hash = crypto
+      .createHash('sha256')
+      .update(`${ip}-${userAgent}`)
+      .digest('hex');
+    console.log(
+      `Generated hash for IP ${ip} and User-Agent ${userAgent}: ${hash}`,
+    );
+    return `guest:${hash}`;
   }
 }

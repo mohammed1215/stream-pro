@@ -18,7 +18,6 @@ import {
 } from '@nestjs/common';
 import { JwtUserPayload, UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { SuccessResponseShape } from '../user/dto/ResponseShape.dto';
 import { Request, type Response } from 'express';
@@ -132,21 +131,6 @@ export class UserController {
   }
 
   // =========================== Profile =========================
-
-  @Get()
-  findAll() {
-    return this.userService.findAll();
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
-  }
 
   @Post('auth/logout')
   logout(@Res({ passthrough: true }) res: Response, @Req() req: Request) {

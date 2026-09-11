@@ -45,13 +45,25 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
   app.use(cookie());
+
+  const allowedOrigins = (
+    process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173'
+  )
+    .split(',')
+    .map((origin) => origin.trim());
+
   app.enableCors({
-    origin: ['http://localhost:5173'],
+    origin: allowedOrigins,
     credentials: true,
   });
 
   app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
   );
 
   const port = Number(process.env.PORT ?? 3001);

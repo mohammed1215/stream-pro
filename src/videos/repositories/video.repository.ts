@@ -383,28 +383,33 @@ export class VideoRepository {
     category?: string,
   ) {
     const skip = (pageNumber - 1) * pageSize;
-    const items = await this.prisma.video.findMany({
-      where: {
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-        category:
-          category && category !== 'All' ? { name: category } : undefined,
-        isDeleted: false,
-        isPublished: true,
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: pageSize,
-      skip,
-      select: VIDEO_LIST_SELECT,
-    });
+
+    const where: Prisma.VideoWhereInput = {
+      OR: [
+        { title: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+      ],
+      category: category && category !== 'All' ? { name: category } : undefined,
+      isDeleted: false,
+      isPublished: true,
+    };
+
+    const [items, totalCount] = await Promise.all([
+      this.prisma.video.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        take: pageSize,
+        skip,
+        select: VIDEO_LIST_SELECT,
+      }),
+      this.prisma.video.count({ where }),
+    ]);
+
     return {
       items,
-      totalCount: items.length, // Replace this with the actual total count if available
+      totalCount,
     };
   }
-
   async updateViews(videoId: string) {
     const video = await this.prisma.video.update({
       where: { id: videoId },

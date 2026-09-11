@@ -24,13 +24,17 @@ export class PlaylistsService {
     );
 
     if (playlist.isPublic === true) {
-      await this.notificationsService.create({
-        actorId: userId,
-        recipientId: userId,
-        contextId: playlist.id,
-        message: `Your playlist ${playlist.title} is now public`,
-        type: NotificationType.PLAYLIST,
-      });
+      this.notificationsService
+        .create({
+          actorId: userId,
+          recipientId: userId,
+          contextId: playlist.id,
+          message: `Your playlist ${playlist.title} is now public`,
+          type: NotificationType.PLAYLIST,
+        })
+        .catch((error) => {
+          console.error('Failed to send playlist notification:', error);
+        });
     }
     return playlist;
   }

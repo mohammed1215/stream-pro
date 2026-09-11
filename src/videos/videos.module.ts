@@ -7,6 +7,7 @@ import { VideoProcessingService } from '../video-processing/video-processing.ser
 import { VideosPublicController } from './public/videos-public.controller';
 import { VideosOwnerController } from './owner/videos-owner.controller';
 import { TagsModule } from '../tags/tags.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   controllers: [VideosPublicController, VideosOwnerController],
@@ -18,6 +19,6 @@ import { TagsModule } from '../tags/tags.module';
     VideoProcessingService,
   ],
   exports: [VideosService, VideoRepository],
-  imports: [TagsModule],
+  imports: [TagsModule, RedisModule],
 })
 export class VideosModule {}

@@ -45,14 +45,21 @@ export class PaginatedSearchVideoResponseDto {
   items: SearchVideoResponseDto[];
   @ApiProperty() pageSize: number;
   @ApiProperty() pageNumber: number;
+  @ApiProperty() totalCount: number;
+  @ApiProperty() totalPages: number;
+  @ApiProperty() hasNextPage: boolean;
 
   constructor(
     items: SearchVideoResponseDto[],
     pageSize: number,
     pageNumber: number,
+    totalCount: number,
   ) {
     this.items = items;
     this.pageNumber = pageNumber;
     this.pageSize = pageSize;
+    this.totalCount = totalCount;
+    this.totalPages = Math.ceil(totalCount / pageSize);
+    this.hasNextPage = pageNumber < this.totalPages;
   }
 }

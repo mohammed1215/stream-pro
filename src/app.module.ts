@@ -27,6 +27,8 @@ import { WeebhooksModule } from './weebhooks/weebhooks.module';
 import { WebhooksController } from './webhooks/webhooks.controller';
 import { CategoriesModule } from './categories/categories.module';
 import { TagsModule } from './tags/tags.module';
+import { envValidationSchema } from './config/env.validation';
+import { RedisModule } from './redis/redis.module';
 
 export const VIDEO_STORAGE = memoryStorage();
 
@@ -37,7 +39,13 @@ export const VIDEO_STORAGE = memoryStorage();
     MulterModule.register({
       storage: VIDEO_STORAGE,
     }),
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: envValidationSchema,
+      validationOptions: {
+        abortEarly: false,
+      },
+    }),
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],
@@ -80,6 +88,8 @@ export const VIDEO_STORAGE = memoryStorage();
     CategoriesModule,
 
     TagsModule,
+
+    RedisModule,
   ],
   controllers: [AppController, WebhooksController],
   providers: [
