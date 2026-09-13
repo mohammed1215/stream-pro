@@ -8,9 +8,14 @@ import { VideosPublicController } from './public/videos-public.controller';
 import { VideosOwnerController } from './owner/videos-owner.controller';
 import { TagsModule } from '../tags/tags.module';
 import { RedisModule } from '../redis/redis.module';
+import { VideosInternalController } from './videos.controller';
 
 @Module({
-  controllers: [VideosPublicController, VideosOwnerController],
+  controllers: [
+    VideosPublicController,
+    VideosOwnerController,
+    VideosInternalController,
+  ],
   providers: [
     VideosService,
     VideoRepository,

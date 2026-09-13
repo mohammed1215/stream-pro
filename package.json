@@ -38,6 +38,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
     "@types/multer": "^2.2.0",
+    "@upstash/qstash": "^2.11.3",
     "@upstash/redis": "^1.38.4",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",

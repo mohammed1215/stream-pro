@@ -21,14 +21,13 @@ export class HomeController {
     @User() user: JwtUserPayload,
     @Query('excludeIds') excludeIds?: string,
   ) {
-    let ids: string[] = [];
-
-    if (Array.isArray(excludeIds)) {
-      ids = excludeIds;
-    } else if (typeof excludeIds === 'string' && excludeIds.trim().length > 0) {
-      ids = excludeIds.includes(',') ? excludeIds.split(',') : [excludeIds];
-    }
+    const ids =
+      excludeIds
+        ?.split(',')
+        .map((id) => id.trim())
+        .filter(Boolean) ?? [];
     const feed = await this.homeService.getFeed(user.userId, ids);
+    console.log(ids);
     return feed;
   }
 }

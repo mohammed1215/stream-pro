@@ -102,6 +102,8 @@ model Video {
   isDeleted Boolean  @default(false)
 
   videoStatus VideoStatus @default(PROCESSING)
+  publishTime DateTime?
+  messageId   String?
 
   channelId  String
   channel    Channel   @relation(references: [id], fields: [channelId], onDelete: Cascade)

@@ -18,13 +18,15 @@ import { VideoUploadCompletedDto } from './dto/video-upload-completed.dto';
 import { ThumbnailUploadCompletedDto } from './dto/thumbnail-upload-completed.dto';
 import { VideoResponseDto } from './dto/video-response.dto';
 import { TagsService } from '../tags/tags.service';
-
+import { Client } from '@upstash/qstash';
 type VideoDetailsOwner = Prisma.VideoGetPayload<{
   select: ReturnType<typeof videoDetailsOwnerSelectFor>;
 }>;
 
 @Injectable()
 export class VideosService {
+  private qstash = new Client({ token: process.env.QSTASH_TOKEN });
+
   constructor(
     private readonly videoRepo: VideoRepository,
     private readonly cloudinaryService: CloudinaryService,
@@ -37,11 +39,27 @@ export class VideosService {
     const normalizedTags = await this.tagsService.resolveTagsForVideo(
       tags || [],
     );
+
     const video = await this.videoRepo.create(
       { ...rest },
       normalizedTags,
       channelId,
     );
+    if (createVideoDto.publishTime) {
+      const messageId = await this.scheduleVideoPublish(
+        video.id,
+        createVideoDto.publishTime,
+      );
+
+      await this.videoRepo.updateVideoDetails(
+        video.id,
+        channelId,
+        {
+          messageId,
+        },
+        { id: true },
+      );
+    }
 
     const signatureVideoData = this.cloudinaryService.getVideoUploadSignature(
       video.id,
@@ -159,6 +177,10 @@ export class VideosService {
     return video;
   }
 
+  publishVideo(videoId: string) {
+    return this.videoRepo.publish(videoId);
+  }
+
   getAllVideosOfChannel(
     channelId: string,
     pageNumber: number,
@@ -196,6 +218,21 @@ export class VideosService {
     const meta = buildPaginationMeta(totalCount, pageNumber, pageSize);
 
     return { videos, ...meta };
+  }
+
+  async scheduleVideoPublish(videoId: string, publishTime: Date) {
+    const delaySeconds = Math.floor(
+      (publishTime.getTime() - Date.now()) / 1000,
+    );
+    const url = `${process.env.API_URL}/videos/internal/publish/${videoId}`;
+    console.log(url);
+    const result = await this.qstash.publishJSON({
+      delay: delaySeconds,
+      url,
+      body: { videoId },
+      retries: 3,
+    });
+    return result.messageId;
   }
 
   async findOneVideoOwnerDetails(videoId: string, userId: string) {

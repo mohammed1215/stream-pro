@@ -1,4 +1,11 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsDate,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateVideoDto {
   @IsString()
@@ -15,4 +22,9 @@ export class CreateVideoDto {
   @IsOptional()
   @IsArray()
   tags?: string[];
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  publishTime?: Date;
 }

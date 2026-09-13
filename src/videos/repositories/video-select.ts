@@ -120,6 +120,7 @@ export const VIDEO_LIST_OWNER_SELECT = {
   isPublished: true,
   description: true,
   createdAt: true,
+  videoStatus: true,
   channel: { select: { id: true, title: true, channelImageUrl: true } },
   _count: true,
 } satisfies Prisma.VideoSelect;

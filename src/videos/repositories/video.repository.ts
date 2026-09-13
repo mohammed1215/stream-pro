@@ -214,20 +214,12 @@ export class VideoRepository {
             : { createdAt: 'desc' },
       take: pageSize,
       skip: (pageNumber - 1) * pageSize,
-      select: VIDEO_LIST_OWNER_SELECT,
+      select: { ...VIDEO_LIST_OWNER_SELECT, publishTime: true },
     });
 
     return videos;
   }
 
-  /**
-   * FIX: previously had no `channelId` param at all (it counted every video
-   * on the whole platform, not this channel's), and the `owner` flag was
-   * inverted (`isPublished: !owner` meant the owner view only counted
-   * UNpublished videos). Now scoped to the channel, and the owner sees all
-   * of their own videos (published + unpublished) while a visitor only
-   * sees the published count.
-   */
   async countVideosOfChannel(channelId: string, owner: boolean) {
     return this.prisma.video.count({
       where: {
@@ -235,6 +227,13 @@ export class VideoRepository {
         isDeleted: false,
         ...(owner ? {} : { isPublished: true }),
       },
+    });
+  }
+
+  publish(videoId: string) {
+    return this.prisma.video.update({
+      where: { id: videoId },
+      data: { isPublished: true },
     });
   }
 
@@ -253,6 +252,8 @@ export class VideoRepository {
           videoUrl: true,
           hlsUrl: true,
           thumbnailUrl: true,
+          videoStatus: true,
+          publishTime: true,
           tags: { select: { id: true, name: true } },
           likes: {
             where: { userId },
@@ -326,6 +327,8 @@ export class VideoRepository {
         thumbnailUrl: true,
         isPublished: true,
         createdAt: true,
+        publishTime: true,
+        videoStatus: true,
         likes: { where: { userId }, select: { id: true }, take: 1 },
         channel: {
           select: {
@@ -439,14 +442,6 @@ export class VideoRepository {
     return video;
   }
 
-  /**
-   * Generic, reusable update. `select` is passed in by the caller so each
-   * call site gets back exactly the shape it needs (and the correct type),
-   * instead of this method hardcoding one fixed select for every caller.
-   *
-   * Returns null (instead of throwing) when the row doesn't exist or isn't
-   * owned by channelId, so callers can turn that into a clean NotFoundException.
-   */
   async updateVideoDetails<S extends Prisma.VideoSelect>(
     videoId: string,
     channelId: string,
@@ -501,12 +496,6 @@ export class VideoRepository {
     }
   }
 
-  /**
-   * FIX: was `where: { id: publicId }` - but the caller now passes the FULL
-   * public_id path (channels/{channelId}/videos/{videoId}), not the bare
-   * UUID, so this always failed with "record not found". Match on the
-   * `publicId` column directly instead.
-   */
   handleUploadNotification({
     publicId,
     status,
