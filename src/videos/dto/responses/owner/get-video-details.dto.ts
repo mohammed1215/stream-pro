@@ -13,4 +13,14 @@ export class VideoDetailsOwnerResponseDto {
   @ApiProperty() durationSeconds!: number;
   @ApiProperty() views!: number;
   @ApiProperty() isPublished!: boolean;
+  @ApiProperty({ nullable: true, type: 'string' }) publishTime!: Date | null;
+  @ApiProperty({ type: 'array', items: { type: 'string' } }) tags!: string[];
+  @ApiProperty({ nullable: true, type: 'string' }) categoryId!: string | null;
+  @ApiProperty() description!: string;
+  @ApiProperty() commentsCount!: number;
+  @ApiProperty() likesCount!: number;
+  @ApiProperty() channelSubscribersCount!: number;
+  @ApiProperty() isSubscribed!: boolean;
+  @ApiProperty() isLiked!: boolean;
+  @ApiProperty() createdAt!: Date;
 }

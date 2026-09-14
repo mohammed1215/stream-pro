@@ -329,6 +329,8 @@ export class VideoRepository {
         createdAt: true,
         publishTime: true,
         videoStatus: true,
+        tags: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true } },
         likes: { where: { userId }, select: { id: true }, take: 1 },
         channel: {
           select: {

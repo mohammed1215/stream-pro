@@ -261,6 +261,9 @@ export class VideosService {
       isLiked: videoData.isLikedByUser,
       createdAt: videoData.createdAt,
       isPublished: videoData.isPublished,
+      publishTime: videoData.publishTime,
+      tags: videoData.tags.map((tag) => tag.name),
+      categoryId: videoData.category?.id,
     };
   }
 
@@ -348,10 +351,21 @@ export class VideosService {
       tags || [],
     );
 
+    if (updateVideoDto.publishTime && updateVideoDto.publishTime < new Date()) {
+      throw new BadRequestException('publishTime cannot be in the past');
+    }
+    let messageId: string | undefined;
+    if (updateVideoDto.publishTime) {
+      messageId = await this.scheduleVideoPublish(
+        videoId,
+        updateVideoDto.publishTime,
+      );
+    }
+
     const video = await this.videoRepo.updateVideoDetails(
       videoId,
       channelId,
-      { ...rest },
+      { ...rest, messageId },
       videoDetailsOwnerSelectFor(userId),
       normalizedTags,
     );
