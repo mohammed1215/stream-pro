@@ -355,7 +355,15 @@ export class VideosService {
       throw new BadRequestException('publishTime cannot be in the past');
     }
     let messageId: string | undefined;
-    if (updateVideoDto.publishTime) {
+    const oldVideo = await this.videoRepo.findById(videoId);
+    if (!oldVideo) {
+      throw new NotFoundException('video not found');
+    }
+
+    if (
+      updateVideoDto.publishTime &&
+      oldVideo.publishTime !== updateVideoDto.publishTime
+    ) {
       messageId = await this.scheduleVideoPublish(
         videoId,
         updateVideoDto.publishTime,
