@@ -36,7 +36,7 @@ export class PlaylistRepository {
 
   async findAllPlaylistsForUser(userId: string) {
     return this.prismaService.playlist.findMany({
-      where: { userId },
+      where: { userId, isPublic: true },
       select: {
         id: true,
         title: true,
@@ -47,6 +47,30 @@ export class PlaylistRepository {
         _count: { select: { videos: true } },
         videos: {
           take: 1,
+          orderBy: { index: 'asc' },
+          select: {
+            video: {
+              select: { thumbnailUrl: true, id: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async findAllPlaylistsForUserIncludingPrivate(userId: string) {
+    return this.prismaService.playlist.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        isPublic: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { videos: true } },
+        videos: {
+          take: 3,
           orderBy: { index: 'asc' },
           select: {
             video: {

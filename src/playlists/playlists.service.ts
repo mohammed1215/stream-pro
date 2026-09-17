@@ -43,6 +43,20 @@ export class PlaylistsService {
     return this.playlistRepository.findAllPlaylistsForUser(userId);
   }
 
+  async findAllPlaylistsForUserIncludingPrivate(userId: string) {
+    const playlists =
+      await this.playlistRepository.findAllPlaylistsForUserIncludingPrivate(
+        userId,
+      );
+    return playlists.map(({ _count, videos, ...playlistRest }) => ({
+      ...playlistRest,
+      videos: videos.map(({ video }) => ({
+        ...video,
+      })),
+      videoCount: _count.videos,
+    }));
+  }
+
   async findVideosOfPlaylist(
     userId: string,
     playlistId: string,
