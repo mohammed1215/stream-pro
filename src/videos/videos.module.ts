@@ -9,12 +9,16 @@ import { VideosOwnerController } from './owner/videos-owner.controller';
 import { TagsModule } from '../tags/tags.module';
 import { RedisModule } from '../redis/redis.module';
 import { VideosInternalController } from './videos.controller';
+import { DownloadsController } from './downloads.controller';
+import { DownloadsService } from './downloads.service';
+import { DownloadRepository } from './repositories/download.repository';
 
 @Module({
   controllers: [
     VideosPublicController,
     VideosOwnerController,
     VideosInternalController,
+    DownloadsController,
   ],
   providers: [
     VideosService,
@@ -22,6 +26,8 @@ import { VideosInternalController } from './videos.controller';
     ChannelService,
     ChannelRepository,
     VideoProcessingService,
+    DownloadsService,
+    DownloadRepository,
   ],
   exports: [VideosService, VideoRepository],
   imports: [TagsModule, RedisModule],

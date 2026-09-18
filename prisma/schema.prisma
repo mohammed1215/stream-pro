@@ -40,6 +40,7 @@ model User {
   notificationsActor     Notification[] @relation(name: "NotificationsActor")
   watchHistories         WatchHistory[]
   refreshTokens          RefreshToken[]
+  downloads              Download[]
 }
 
 model RefreshToken {
@@ -116,9 +117,19 @@ model Video {
   playlistVideos PlaylistVideo[]
   watchHistories WatchHistory[]
 
-  tags Tag[]
+  tags      Tag[]
+  downloads Download[]
 
   @@index([categoryId])
+}
+
+model Download {
+  id        String   @id @default(uuid())
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 model Category {

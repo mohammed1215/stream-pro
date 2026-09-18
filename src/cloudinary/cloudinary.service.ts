@@ -234,4 +234,15 @@ export class CloudinaryService implements OnModuleInit {
     );
     return expectedSignature === payload.signature;
   }
+
+  generateDownloadSignedUrl(publicId: string) {
+    const expiresAt = Math.floor(Date.now() / 1000) + 2 * 60 * 60;
+
+    return v2.utils.private_download_url(publicId, 'mp4', {
+      expires_at: expiresAt,
+      resource_type: 'video',
+      attachment: true,
+      type: 'upload',
+    });
+  }
 }
