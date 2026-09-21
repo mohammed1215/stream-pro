@@ -41,6 +41,7 @@ model User {
   watchHistories         WatchHistory[]
   refreshTokens          RefreshToken[]
   downloads              Download[]
+  searchQueries          SearchQuery[]
 }
 
 model RefreshToken {
@@ -121,6 +122,19 @@ model Video {
   downloads Download[]
 
   @@index([categoryId])
+}
+
+model SearchQuery {
+  id        String   @id @default(uuid())
+  term      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, term])
+  @@index([term])
 }
 
 model Download {

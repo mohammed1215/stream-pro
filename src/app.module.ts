@@ -29,6 +29,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { TagsModule } from './tags/tags.module';
 import { envValidationSchema } from './config/env.validation';
 import { RedisModule } from './redis/redis.module';
+import { SearchModule } from './search/search.module';
 
 export const VIDEO_STORAGE = memoryStorage();
 
@@ -90,6 +91,8 @@ export const VIDEO_STORAGE = memoryStorage();
     TagsModule,
 
     RedisModule,
+
+    SearchModule,
   ],
   controllers: [AppController, WebhooksController],
   providers: [

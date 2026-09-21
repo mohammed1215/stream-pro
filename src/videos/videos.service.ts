@@ -287,6 +287,7 @@ export class VideosService {
       pageSize,
       category,
     );
+
     return { ...data, pageNumber, pageSize };
   }
 

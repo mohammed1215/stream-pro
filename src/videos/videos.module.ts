@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { VideosService } from './videos.service';
 import { VideoRepository } from './repositories/video.repository';
 import { ChannelService } from '../channel/channel.service';
@@ -12,6 +12,7 @@ import { VideosInternalController } from './videos.controller';
 import { DownloadsController } from './downloads.controller';
 import { DownloadsService } from './downloads.service';
 import { DownloadRepository } from './repositories/download.repository';
+import { SearchModule } from '../search/search.module';
 
 @Module({
   controllers: [
@@ -30,6 +31,6 @@ import { DownloadRepository } from './repositories/download.repository';
     DownloadRepository,
   ],
   exports: [VideosService, VideoRepository],
-  imports: [TagsModule, RedisModule],
+  imports: [TagsModule, RedisModule, forwardRef(() => SearchModule)],
 })
 export class VideosModule {}

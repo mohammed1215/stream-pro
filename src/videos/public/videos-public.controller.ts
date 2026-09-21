@@ -27,12 +27,14 @@ import { SuccessResponseShape } from '../../user/dto/ResponseShape.dto';
 import { RedisService } from '../../redis/redis.service';
 import type { Request } from 'express';
 import * as crypto from 'crypto';
+import { SearchService } from '../../search/search.service';
 @ApiTags('videos')
 @Controller('videos')
 export class VideosPublicController {
   constructor(
     private readonly videosService: VideosService,
     private readonly redisService: RedisService,
+    private readonly searchService: SearchService,
   ) {}
 
   // ========================== search video ==========================
@@ -42,7 +44,9 @@ export class VideosPublicController {
     description: 'Videos searched successfully',
     type: PaginatedSearchVideoResponseDto,
   })
-  async searchVideos(@Query() searchVideoDto: SearchVideoDto) {
+  async searchVideos(
+    @Query() searchVideoDto: SearchVideoDto,
+  ): Promise<PaginatedSearchVideoResponseDto> {
     const { query, pageNumber = 1, pageSize = 10, category } = searchVideoDto;
     const { items, totalCount } = await this.videosService.searchVideos(
       query,
@@ -50,6 +54,9 @@ export class VideosPublicController {
       pageSize,
       category,
     );
+    this.searchService.logSearch(query).catch((err) => {
+      console.log(err);
+    });
     const videoList = items.map((video) => {
       return new SearchVideoResponseDto(
         video.id,
