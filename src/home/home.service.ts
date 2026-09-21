@@ -8,10 +8,7 @@ export class HomeService {
     const { categoryIds, channelIds, tagIds, watchedVideoIds } =
       await this.homeRepository.findUserTasteProfile(userId);
 
-    const allExcludeIds = new Set<string>([
-      ...(excludeIds || []),
-      ...watchedVideoIds,
-    ]);
+    const allExcludeIds = new Set<string>([...(excludeIds || [])]);
 
     const coWatchers = await this.homeRepository.findCoWatchers(
       watchedVideoIds,
