@@ -25,7 +25,6 @@ import {
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
-  ApiOkResponse,
 } from '@nestjs/swagger';
 import {
   GetChannelResponseDto,
@@ -82,11 +81,10 @@ export class ChannelController {
 
   @Get('channels/:channelId')
   @UseGuards(OptionalAuthGuard)
-  @ApiOkResponse({ type: GetChannelDetailsResponseDto })
   async getChannelDetails(
     @Param('channelId') channelId: string,
     @User() user: JwtUserPayload | undefined,
-  ) {
+  ): Promise<GetChannelDetailsResponseDto> {
     const channel = await this.channelService.getChannelDetails(
       channelId,
       user?.userId,
@@ -165,6 +163,7 @@ export class ChannelController {
           updatedAt: playlist.updatedAt,
           isPublic: playlist.isPublic,
           videosCount: playlist._count.videos,
+          thumbnails: playlist.videos.map((video) => video.video.thumbnailUrl),
         }),
     );
     return new PaginatedChannelPlaylistsResponseDto({
@@ -214,6 +213,7 @@ export class ChannelController {
           updatedAt: playlist.updatedAt,
           isPublic: playlist.isPublic,
           videosCount: playlist._count.videos,
+          thumbnails: null,
         }),
     );
 

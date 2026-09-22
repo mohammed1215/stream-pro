@@ -1,3 +1,5 @@
+import { ApiProperty } from '@nestjs/swagger';
+
 export class GetChannelPlaylistResponseDto {
   id: string;
   title: string;
@@ -6,6 +8,14 @@ export class GetChannelPlaylistResponseDto {
   updatedAt: Date;
   isPublic: boolean;
   videosCount: number;
+  @ApiProperty({
+    type: 'array',
+    items: { type: 'string', nullable: true },
+    nullable: true,
+    description:
+      'Array of thumbnail URLs (each item can be null if not generated yet)',
+  })
+  thumbnails: null | (string | null)[];
   constructor({
     id,
     title,
@@ -14,6 +24,7 @@ export class GetChannelPlaylistResponseDto {
     updatedAt,
     isPublic,
     videosCount,
+    thumbnails,
   }: GetChannelPlaylistResponseDto) {
     this.id = id;
     this.title = title;
@@ -22,6 +33,7 @@ export class GetChannelPlaylistResponseDto {
     this.updatedAt = updatedAt;
     this.isPublic = isPublic;
     this.videosCount = videosCount;
+    this.thumbnails = thumbnails;
   }
 }
 

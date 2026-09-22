@@ -75,12 +75,17 @@ export const VIDEO_STORAGE = memoryStorage();
       {
         name: 'short',
         ttl: 1000,
-        limit: 3,
+        limit: 100,
       },
       {
         name: 'medium',
         ttl: 60000,
-        limit: 100,
+        limit: 200,
+      },
+      {
+        name: 'high',
+        ttl: 150000,
+        limit: 500,
       },
     ]),
 
