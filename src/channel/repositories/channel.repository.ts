@@ -134,7 +134,13 @@ export class ChannelRepository {
 
     const playlists = await this.prisma.playlist.findMany({
       where: { isPublic: true, user: { channel: { id: channelId } } },
-      include: { _count: true },
+      include: {
+        _count: true,
+        videos: {
+          take: 3,
+          select: { video: { select: { thumbnailUrl: true } } },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       take: 5,
     });

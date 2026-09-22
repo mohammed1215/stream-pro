@@ -2,6 +2,7 @@ export class ChannelVideoResponseDto {
   videoId: string;
   videoTitle: string;
   videoDescription: string | null;
+  durationSeconds: number | null;
   videoUrl: string | null;
   hlsUrl: string | null;
   thumbnailUrl: string | null;
@@ -22,6 +23,7 @@ export class ChannelVideoResponseDto {
     this.updatedAt = video.updatedAt;
     this.isLikedByUser = video.isLikedByUser;
     this.isInWatchLater = video.isInWatchLater;
+    this.durationSeconds = video.durationSeconds;
   }
 }
 export class PaginatedChannelVideosResponseDto {

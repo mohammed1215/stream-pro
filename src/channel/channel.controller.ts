@@ -127,6 +127,7 @@ export class ChannelController {
           videoDescription: video.description,
           videoUrl: video.videoUrl,
           hlsUrl: video.hlsUrl,
+          durationSeconds: video.duration,
           thumbnailUrl: video.thumbnailUrl,
           views: video.views,
           createdAt: video.createdAt,
@@ -196,6 +197,7 @@ export class ChannelController {
           views: video.views,
           createdAt: video.createdAt,
           updatedAt: video.updatedAt,
+          durationSeconds: video.duration,
           isInWatchLater: video.watchLaters
             ? video.watchLaters.length > 0
             : false,
@@ -213,7 +215,7 @@ export class ChannelController {
           updatedAt: playlist.updatedAt,
           isPublic: playlist.isPublic,
           videosCount: playlist._count.videos,
-          thumbnails: null,
+          thumbnails: playlist.videos.map((video) => video.video.thumbnailUrl),
         }),
     );
 
