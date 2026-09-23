@@ -78,7 +78,11 @@ export class ChannelService {
   }
 
   async uploadThumbnailUrl(channelId: string, thumbnail: Express.Multer.File) {
+    const channel = await this.channelRepo.findOneByIdWithCounts(channelId);
+
     const cloudRes = await this.cloudinaryService.uploadImage(thumbnail);
+    if (channel?.thumbnailPublicId)
+      await this.cloudinaryService.removeImage(channel.thumbnailPublicId);
     const updatedChannel = await this.channelRepo.updateThumbnailUrl(
       channelId,
       cloudRes.secure_url,
@@ -91,7 +95,11 @@ export class ChannelService {
     channelId: string,
     channelImage: Express.Multer.File,
   ) {
+    const channel = await this.channelRepo.findOneByIdWithCounts(channelId);
+
     const cloudRes = await this.cloudinaryService.uploadImage(channelImage);
+    if (channel?.channelImagePublicId)
+      await this.cloudinaryService.removeImage(channel.channelImagePublicId);
     const updatedChannel = await this.channelRepo.updateChannelImageUrl(
       channelId,
       cloudRes.secure_url,
