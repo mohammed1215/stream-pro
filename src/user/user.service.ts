@@ -270,7 +270,8 @@ export class UserService {
     let avatarUrl: string | undefined = undefined;
     if (avatarFile) {
       const existingUser = await this.userRepo.findById(userId);
-      avatarUrl = await this.cloudinaryService.uploadImage(avatarFile);
+      const avatarResult = await this.cloudinaryService.uploadImage(avatarFile);
+      avatarUrl = avatarResult.secure_url;
       if (existingUser?.avatarUrl) {
         this.cloudinaryService
           .removeImage(existingUser.avatarUrl)

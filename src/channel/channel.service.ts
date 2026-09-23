@@ -78,10 +78,11 @@ export class ChannelService {
   }
 
   async uploadThumbnailUrl(channelId: string, thumbnail: Express.Multer.File) {
-    const secureUrl = await this.cloudinaryService.uploadImage(thumbnail);
+    const cloudRes = await this.cloudinaryService.uploadImage(thumbnail);
     const updatedChannel = await this.channelRepo.updateThumbnailUrl(
       channelId,
-      secureUrl,
+      cloudRes.secure_url,
+      cloudRes.public_id,
     );
     return updatedChannel;
   }
@@ -90,10 +91,11 @@ export class ChannelService {
     channelId: string,
     channelImage: Express.Multer.File,
   ) {
-    const secureUrl = await this.cloudinaryService.uploadImage(channelImage);
+    const cloudRes = await this.cloudinaryService.uploadImage(channelImage);
     const updatedChannel = await this.channelRepo.updateChannelImageUrl(
       channelId,
-      secureUrl,
+      cloudRes.secure_url,
+      cloudRes.public_id,
     );
     return updatedChannel;
   }

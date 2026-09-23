@@ -70,14 +70,16 @@ enum DeviceType {
 }
 
 model Channel {
-  id              String   @id @default(uuid())
-  title           String
-  description     String?
-  thumbnailUrl    String?
-  channelImageUrl String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now()) @updatedAt
-  isDeleted       Boolean  @default(false)
+  id                   String   @id @default(uuid())
+  title                String
+  description          String?
+  thumbnailUrl         String?
+  thumbnailPublicId    String?
+  channelImageUrl      String?
+  channelImagePublicId String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
+  isDeleted            Boolean  @default(false)
 
   userId         String         @unique
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)

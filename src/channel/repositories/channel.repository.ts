@@ -148,17 +148,25 @@ export class ChannelRepository {
     return { videos, playlists };
   }
 
-  async updateThumbnailUrl(channelId: string, thumbnailUrl: string) {
+  async updateThumbnailUrl(
+    channelId: string,
+    thumbnailUrl: string,
+    thumbnailPublicId?: string,
+  ) {
     return this.prisma.channel.update({
       where: { id: channelId },
-      data: { thumbnailUrl },
+      data: { thumbnailUrl, thumbnailPublicId },
     });
   }
 
-  async updateChannelImageUrl(channelId: string, channelImageUrl: string) {
+  async updateChannelImageUrl(
+    channelId: string,
+    channelImageUrl: string,
+    channelImagePublicId?: string,
+  ) {
     return this.prisma.channel.update({
       where: { id: channelId },
-      data: { channelImageUrl },
+      data: { channelImageUrl, channelImagePublicId },
     });
   }
 

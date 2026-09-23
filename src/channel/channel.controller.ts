@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -52,6 +53,10 @@ import { UpdateChannelDto } from './dto/update-channel.dto';
 export class ChannelController {
   constructor(private readonly channelService: ChannelService) {}
 
+  // ==========================================
+  // 1. Owner Static Routes (Post / Patch)
+  // ==========================================
+
   @Post('owner/channels')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
@@ -65,19 +70,109 @@ export class ChannelController {
     return new SuccessResponseShape<CreateChannelResponseDto>(data);
   }
 
+  // ✅ المسارات المحددة أولاً (Specific Upload Routes)
+  @Patch('owner/channels/upload-thumbnail')
+  @UseGuards(AuthGuard)
+  @UseInterceptors(FileInterceptor('thumbnail'), ChannelPreloadInterceptor)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { thumbnail: { type: 'string', format: 'binary' } },
+      required: ['thumbnail'],
+    },
+  })
+  @ApiBearerAuth()
+  async uploadThumbnail(
+    @UploadedFile() thumbnail: Express.Multer.File,
+    @Channel() channel: ChannelRequestData,
+  ) {
+    if (!thumbnail) {
+      throw new BadRequestException('Please provide an image file');
+    }
+    const data = await this.channelService.uploadThumbnailUrl(
+      channel.id,
+      thumbnail,
+    );
+    return new SuccessResponseShape({ thumbnailUrl: data.thumbnailUrl });
+  }
+
+  @Patch('owner/channels/upload-channel-image')
+  @UseGuards(AuthGuard)
+  @UseInterceptors(FileInterceptor('avatar'), ChannelPreloadInterceptor)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { avatar: { type: 'string', format: 'binary' } },
+      required: ['avatar'],
+    },
+  })
+  @ApiBearerAuth()
+  async uploadAvatarUrl(
+    @UploadedFile() avatar: Express.Multer.File,
+    @Channel() channel: ChannelRequestData,
+  ) {
+    if (!avatar) {
+      throw new BadRequestException('Please provide an image file');
+    }
+    const data = await this.channelService.uploadChannelImageUrl(
+      channel.id,
+      avatar,
+    );
+    return new SuccessResponseShape({ channelImageUrl: data.channelImageUrl });
+  }
+
+  // ✅ المسار العام للتعديل بعد مسارات الرفع
+  @Patch('owner/channels')
+  @UseGuards(AuthGuard)
+  async updateChannel(
+    @User() user: JwtUserPayload,
+    @Body() updateChannelDto: UpdateChannelDto,
+  ) {
+    return this.channelService.updateChannel(user.userId, updateChannelDto);
+  }
+
+  // ==========================================
+  // 2. Owner Get Routes (تم حل تكرار المسار)
+  // ==========================================
+
   @Get('owner/channels')
   @UseGuards(AuthGuard)
+  @UseInterceptors(ChannelPreloadInterceptor)
   @ApiBearerAuth()
   @ApiCreatedResponse({
     type: GetChannelResponseWrapperDto,
     description: 'get user channel',
     summary: "get user's channel",
   })
-  async getChannel(@User() user: JwtUserPayload) {
-    const data = await this.channelService.getChannel(user.userId);
-    if (!data) throw new NotFoundException('channel was not found');
-    return new SuccessResponseShape<GetChannelResponseDto>(data);
+  async getOwnerChannelDetails(
+    @User() user: JwtUserPayload,
+    @Channel() channel: ChannelRequestData,
+  ): Promise<GetChannelDetailsResponseDto> {
+    const channelDetails = await this.channelService.getChannelDetails(
+      channel.id,
+      user.userId,
+    );
+    return {
+      channelId: channelDetails.id,
+      title: channelDetails.title,
+      description: channelDetails.description,
+      thumbnailUrl: channelDetails.thumbnailUrl,
+      channelImageUrl: channelDetails.channelImageUrl,
+      videosCount: channelDetails._count.videos,
+      subscriptionsCount: channelDetails._count.subscriptions,
+      totalViews: channelDetails.totalViews,
+      isSubscribed: channelDetails.isSubscribed,
+      createdAt: channelDetails.createdAt,
+      updatedAt: channelDetails.updatedAt,
+      isOwner: true,
+    };
   }
+
+  // ==========================================
+  // 3. Dynamic Param Routes (:channelId)
+  // ==========================================
 
   @Get('channels/:channelId')
   @UseGuards(OptionalAuthGuard)
@@ -223,64 +318,5 @@ export class ChannelController {
       videos: videoList,
       playlists: playlistList,
     });
-  }
-
-  @Patch('owner/channels/upload-thumbnail')
-  @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor('thumbnail'), ChannelPreloadInterceptor)
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: { thumbnail: { type: 'string', format: 'binary' } },
-      required: ['thumbnail'],
-    },
-  })
-  @ApiBearerAuth()
-  async uploadThumbnail(
-    @UploadedFile()
-    thumbnail: Express.Multer.File,
-    @Channel() channel: ChannelRequestData,
-  ) {
-    const data = await this.channelService.uploadThumbnailUrl(
-      channel.id,
-      thumbnail,
-    );
-
-    return new SuccessResponseShape({ thumbnailUrl: data.thumbnailUrl });
-  }
-
-  @Patch('owner/channels/upload-channel-image')
-  @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor('avatar'), ChannelPreloadInterceptor)
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: { avatar: { type: 'string', format: 'binary' } },
-      required: ['avatar'],
-    },
-  })
-  @ApiBearerAuth()
-  async uploadAvatarUrl(
-    @UploadedFile()
-    avatar: Express.Multer.File,
-    @Channel() channel: ChannelRequestData,
-  ) {
-    const data = await this.channelService.uploadChannelImageUrl(
-      channel.id,
-      avatar,
-    );
-
-    return new SuccessResponseShape({ channelImageUrl: data.channelImageUrl });
-  }
-
-  @Patch('owner/channels')
-  @UseGuards(AuthGuard)
-  async updateChannel(
-    @User() user: JwtUserPayload,
-    @Body() updateChannelDto: UpdateChannelDto,
-  ) {
-    return this.channelService.updateChannel(user.userId, updateChannelDto);
   }
 }

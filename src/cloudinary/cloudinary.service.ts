@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   OnModuleInit,
 } from '@nestjs/common';
-import { v2 } from 'cloudinary';
+import { UploadApiResponse, v2 } from 'cloudinary';
 import { cloudinaryConfig } from './cloudinary.config';
 import { Readable } from 'stream';
 import * as crypto from 'crypto';
@@ -15,7 +15,7 @@ export class CloudinaryService implements OnModuleInit {
   onModuleInit() {
     v2.config(cloudinaryConfig);
   }
-  uploadImage(image: Express.Multer.File): Promise<string> {
+  uploadImage(image: Express.Multer.File): Promise<UploadApiResponse> {
     if (!image) {
       throw new BadRequestException('No image file provided');
     }
@@ -41,7 +41,7 @@ export class CloudinaryService implements OnModuleInit {
             );
           }
 
-          if (result) resolve(result.secure_url);
+          if (result) resolve(result);
         },
       );
 
