@@ -6,7 +6,9 @@ export class CommentResponseDto {
   @ApiProperty() isEditted!: boolean;
   @ApiProperty() userId!: string;
   @ApiProperty() userName!: string;
+  @ApiProperty() videoId!: string;
   @ApiProperty({ nullable: true }) userProfileImage!: string | null;
+  @ApiProperty() replyCount!: number;
   @ApiProperty() createdAt!: Date;
 
   constructor(
@@ -14,17 +16,22 @@ export class CommentResponseDto {
     content: string,
     isEditted: boolean,
     userId: string,
+    videoId: string,
     userName: string,
     userProfileImage: string | null,
+
     createdAt: Date,
+    replyCount: number,
   ) {
     this.commentId = id;
     this.content = content;
     this.isEditted = isEditted;
     this.userId = userId;
+    this.videoId = videoId;
     this.userName = userName;
     this.userProfileImage = userProfileImage;
     this.createdAt = createdAt;
+    this.replyCount = replyCount;
   }
 }
 

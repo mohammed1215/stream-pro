@@ -1,14 +1,24 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateCommentDto } from '../dto/create-comment.dto';
 
 @Injectable()
 export class CommentRepository {
   constructor(private readonly prismaService: PrismaService) {}
-  async create(createCommentDto: Prisma.CommentCreateInput) {
+  async create(
+    createCommentDto: CreateCommentDto,
+    userId: string,
+    videoId: string,
+  ) {
     try {
       const comment = await this.prismaService.comment.create({
-        data: createCommentDto,
+        data: {
+          ...createCommentDto,
+          parentId: createCommentDto.parentId || null,
+          userId,
+          videoId,
+        },
         include: {
           video: { include: { channel: { include: { user: true } } } },
         },
@@ -44,9 +54,47 @@ export class CommentRepository {
     });
   }
 
+  findAllRepliesOfComment(
+    parentId: string,
+    pageNumber: number = 1,
+    pageSize: number = 10,
+    sort: 'asc' | 'desc' = 'desc',
+  ) {
+    const validPage = Math.max(1, pageNumber);
+    const validLimit = Math.max(1, pageSize);
+    return this.prismaService.comment.findMany({
+      where: { parentId, isDeleted: false },
+      skip: (validPage - 1) * validLimit,
+      take: validLimit,
+      include: { user: true },
+      orderBy: { createdAt: sort },
+    });
+  }
+
   async findOne(commentId: string) {
     return await this.prismaService.comment.findUnique({
       where: { id: commentId },
+    });
+  }
+
+  async findAllCommentsWithSpecificSelect(
+    userId: string,
+    pageNumber = 1,
+    pageSize = 10,
+  ) {
+    return await this.prismaService.comment.findMany({
+      where: { video: { channel: { userId } }, isDeleted: false },
+      take: pageSize,
+      skip: (pageNumber - 1) * pageSize,
+      select: {
+        id: true,
+        content: true,
+        user: { select: { id: true, name: true, avatarUrl: true } },
+        createdAt: true,
+        updatedAt: true,
+        video: { select: { id: true, title: true, thumbnailUrl: true } },
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

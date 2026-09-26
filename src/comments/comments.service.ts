@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { CommentRepository } from './repositories/comment.repository';
@@ -16,11 +16,35 @@ export class CommentsService {
     videoId: string,
     createCommentDto: CreateCommentDto,
   ) {
-    const comment = await this.commentRepo.create({
-      ...createCommentDto,
-      user: { connect: { id: userId } },
-      video: { connect: { id: videoId } },
-    });
+    if (createCommentDto.parentId) {
+      const parent = await this.commentRepo.findOne(createCommentDto.parentId);
+      if (!parent || parent.isDeleted) {
+        throw new BadRequestException('Parent comment does not exist');
+      }
+
+      if (parent.videoId !== videoId) {
+        throw new BadRequestException(
+          'Parent comment does not belong to this video',
+        );
+      }
+      if (parent.parentId) {
+        throw new BadRequestException('Replying to a reply is not allowed');
+      }
+    }
+    const comment = await this.commentRepo.create(
+      createCommentDto,
+      userId,
+      videoId,
+    );
+
+    //update counts
+    if (comment.parentId) {
+      this.commentRepo
+        .update(comment.parentId, userId, { replyCount: { increment: 1 } })
+        .catch((error) => {
+          console.error('Failed to update reply count:', error);
+        });
+    }
 
     this.notificationService
       .create({
@@ -44,15 +68,46 @@ export class CommentsService {
     sort: 'asc' | 'desc',
   ) {
     return {
-      comments: await this.commentRepo.findAll({ videoId }, page, limit, sort),
+      comments: await this.commentRepo.findAll(
+        { videoId, parentId: null },
+        page,
+        limit,
+        sort,
+      ),
       totalPages: Math.ceil(
         (await this.commentRepo.countComments({ videoId })) / limit,
       ),
     };
   }
-
+  findAllRepliesOfComment(commentId: string) {
+    return this.commentRepo.findAllRepliesOfComment(commentId, 1, 100, 'desc');
+  }
   findOne(commentId: string) {
     return this.commentRepo.findOne(commentId);
+  }
+
+  async getRecentCommentsForChannel(
+    userId: string,
+    pageNumber = 1,
+    pageSize = 10,
+  ) {
+    if (pageNumber < 1) {
+      throw new BadRequestException('pageNumber must be positive');
+    }
+    if (pageSize < 1) {
+      throw new BadRequestException('pageSize must be positive');
+    }
+    const comments = await this.commentRepo.findAllCommentsWithSpecificSelect(
+      userId,
+      pageNumber,
+      pageSize,
+    );
+
+    const count = await this.commentRepo.countComments({
+      userId,
+      isDeleted: false,
+    });
+    return { comments, count };
   }
 
   update(

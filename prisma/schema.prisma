@@ -185,6 +185,11 @@ model Comment {
   user    User   @relation(references: [id], fields: [userId], onDelete: Cascade)
   videoId String
   video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId   String?
+  replies    Comment[] @relation("CommentReplies")
+  replyCount Int       @default(0)
 }
 
 model Like {

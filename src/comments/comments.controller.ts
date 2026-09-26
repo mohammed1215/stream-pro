@@ -10,6 +10,7 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -22,10 +23,52 @@ import {
   CommentResponseDto,
   PaginatedCommentsResponseDto,
 } from './dto/comment-response.dto';
+import { PaginatedGetRecentCommentsForChannel } from './dto/responses/get-recent-comments-for-channel.dto';
 
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
+
+  @Get()
+  @ApiResponse({
+    description:
+      "returns the recent comments for channel of the owner's channel",
+  })
+  @UseGuards(AuthGuard)
+  async getRecentCommentsForChannel(
+    @User() user: JwtUserPayload,
+    @Query(
+      'pageSize',
+      new DefaultValuePipe(1),
+      new ParseIntPipe({ optional: true }),
+    )
+    pageSize: number = 10,
+    @Query(
+      'pageNumber',
+      new DefaultValuePipe(1),
+      new ParseIntPipe({ optional: true }),
+    )
+    pageNumber: number = 1,
+  ): Promise<PaginatedGetRecentCommentsForChannel> {
+    const { comments, count } =
+      await this.commentsService.getRecentCommentsForChannel(
+        user.userId,
+        pageNumber,
+        pageSize,
+      );
+
+    const totalPages = Math.ceil(count / pageSize);
+
+    return {
+      items: comments,
+      pageNumber,
+      pageSize,
+      totalPages,
+      totalCount: count,
+      hasNextPage: totalPages !== pageNumber,
+      hasPreviousPage: pageNumber !== 1,
+    };
+  }
 
   @Post(':videoId')
   @UseGuards(AuthGuard)
@@ -85,9 +128,11 @@ export class CommentsController {
           comment.content,
           comment.isEditted,
           comment.userId,
+          comment.videoId,
           comment.user.name,
           comment.user.avatarUrl,
           comment.createdAt,
+          comment.replyCount,
         ),
     );
 
@@ -100,10 +145,30 @@ export class CommentsController {
     );
   }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.commentsService.findOne(id);
-  // }
+  @Get(':commentId/replies')
+  @ApiResponse({
+    type: [CommentResponseDto],
+  })
+  async findRepliesOfComment(
+    @Param('commentId') commentId: string,
+  ): Promise<CommentResponseDto[]> {
+    const comment =
+      await this.commentsService.findAllRepliesOfComment(commentId);
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+    return comment.map((c) => ({
+      commentId: c.id,
+      content: c.content,
+      isEditted: c.isEditted,
+      userId: c.userId,
+      videoId: c.videoId,
+      userName: c.user.name,
+      userProfileImage: c.user.avatarUrl,
+      createdAt: c.createdAt,
+      replyCount: c.replyCount,
+    }));
+  }
 
   @Patch(':commentId')
   @UseGuards(AuthGuard)
