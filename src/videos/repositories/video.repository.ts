@@ -436,9 +436,13 @@ export class VideoRepository {
   }
 
   async removeVideo(videoId: string, channelId: string) {
-    const video = await this.prisma.video.update({
-      where: { id: videoId, isDeleted: false, channelId },
-      data: { isDeleted: true },
+    // const video = await this.prisma.video.update({
+    //   where: { id: videoId, isDeleted: false, channelId },
+    //   data: { isDeleted: true },
+    // });
+
+    const video = await this.prisma.video.delete({
+      where: { id: videoId, channelId },
     });
 
     return video;

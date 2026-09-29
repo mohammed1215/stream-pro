@@ -300,6 +300,15 @@ export class VideosService {
   // ================================ Publish Video ==============================
 
   async publishAndUnPublishVideo(videoId: string, channelId: string) {
+    const video = await this.videoRepo.findById(videoId);
+    if (!video) {
+      throw new NotFoundException('video not found');
+    }
+    if (video.hlsUrl === null) {
+      throw new BadRequestException(
+        "video is not ready to be published. Please wait for the processing to complete. or if you didn't upload video please upload one",
+      );
+    }
     const data = await this.videoRepo.publishAndUnPublishVideo(
       videoId,
       channelId,

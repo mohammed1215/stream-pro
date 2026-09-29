@@ -30,6 +30,7 @@ import { TagsModule } from './tags/tags.module';
 import { envValidationSchema } from './config/env.validation';
 import { RedisModule } from './redis/redis.module';
 import { SearchModule } from './search/search.module';
+import { CronJobModule } from './cron-job/cron-job.module';
 
 export const VIDEO_STORAGE = memoryStorage();
 
@@ -98,6 +99,8 @@ export const VIDEO_STORAGE = memoryStorage();
     RedisModule,
 
     SearchModule,
+
+    CronJobModule,
   ],
   controllers: [AppController, WebhooksController],
   providers: [
