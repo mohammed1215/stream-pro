@@ -11,6 +11,9 @@ export class ChannelSummaryDto2 {
   thumbnailUrl!: string | null;
 
   @ApiProperty({ nullable: true, type: 'string' })
+  channelImageUrl!: string | null;
+
+  @ApiProperty({ nullable: true, type: 'string' })
   description!: string | null;
 
   @ApiProperty()

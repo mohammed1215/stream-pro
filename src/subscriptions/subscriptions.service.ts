@@ -55,7 +55,7 @@ export class SubscriptionsService {
     }
   }
 
-  findOwnerChannelSubscriptions(
+  async findOwnerChannelSubscriptions(
     channelId: string,
     pageOptions: { pageNumber: number; pageSize: number } = {
       pageNumber: 1,
@@ -67,14 +67,22 @@ export class SubscriptionsService {
       (pageOptions.pageNumber - 1) * pageOptions.pageSize,
     );
     const validTake = Math.max(1, pageOptions.pageSize);
-
-    return this.subscriptionRepository.findOwnerChannelSubscriptions(
-      { channelId },
-      {
-        skip: validSkip,
-        take: validTake,
-      },
-    );
+    const subscriptions =
+      await this.subscriptionRepository.findOwnerChannelSubscriptions(
+        { channelId },
+        {
+          skip: validSkip,
+          take: validTake,
+        },
+      );
+    const totalCount =
+      await this.subscriptionRepository.countOwnerChannelSubscriptions(
+        channelId,
+      );
+    const totalPages = Math.ceil(totalCount / validTake);
+    const hasNextPage = pageOptions.pageNumber < totalPages;
+    const hasPreviousPage = pageOptions.pageNumber > 1;
+    return { subscriptions, hasNextPage, hasPreviousPage, totalPages };
   }
 
   // findOne(id: number) {
@@ -110,6 +118,7 @@ export class SubscriptionsService {
         id: item.channel.id,
         title: item.channel.title,
         thumbnailUrl: item.channel.thumbnailUrl,
+        channelImageUrl: item.channel.channelImageUrl,
         description: item.channel.description,
         subscriberCount: item.channel._count.subscriptions,
       },

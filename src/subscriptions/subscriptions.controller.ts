@@ -78,7 +78,7 @@ export class SubscriptionsController {
     )
     pageSize: number = 10,
   ) {
-    const subscriptions =
+    const { subscriptions, hasNextPage, hasPreviousPage, totalPages } =
       await this.subscriptionsService.findOwnerChannelSubscriptions(
         channel.id,
         {
@@ -95,6 +95,10 @@ export class SubscriptionsController {
           subscription.user.id,
           subscription.user.name,
           subscription.user.email,
+          subscription.user.avatarUrl,
+          subscription.channel.title,
+          subscription.channel.thumbnailUrl,
+          subscription.channel.channelImageUrl,
           subscription.createdAt,
         ),
     );
@@ -103,6 +107,9 @@ export class SubscriptionsController {
       subscriptionList,
       pageNumber,
       pageSize,
+      hasNextPage,
+      hasPreviousPage,
+      totalPages,
     );
   }
 

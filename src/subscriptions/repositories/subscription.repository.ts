@@ -21,12 +21,28 @@ export class SubscriptionRepository {
       where: filter,
       select: {
         id: true,
-        user: { select: { id: true, name: true, email: true } },
+        user: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
         channelId: true,
+        channel: {
+          select: {
+            id: true,
+            title: true,
+            thumbnailUrl: true,
+            channelImageUrl: true,
+          },
+        },
         createdAt: true,
       },
       skip: pageOptions.skip,
       take: pageOptions.take,
+    });
+  }
+
+  async countOwnerChannelSubscriptions(channelId: string) {
+    return this.prismaService.subscription.count({
+      where: { channelId },
     });
   }
 
@@ -54,6 +70,7 @@ export class SubscriptionRepository {
             id: true,
             title: true,
             thumbnailUrl: true,
+            channelImageUrl: true,
             description: true,
             _count: { select: { subscriptions: true } },
           },
