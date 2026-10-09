@@ -14,11 +14,13 @@ export class SubscriptionResponseDto {
   @ApiProperty({ nullable: true, type: 'string' })
   channelImageUrl: string | null;
   @ApiProperty() createdAt: Date;
+  @ApiProperty({ nullable: true }) userChannelId: string | null;
 
   constructor(
     subscriptionId: string,
     channelId: string,
     userId: string,
+    userChannelId: string | null,
     name: string,
     email: string,
     avatarUrl: string | null,
@@ -30,6 +32,7 @@ export class SubscriptionResponseDto {
     this.subscriptionId = subscriptionId;
     this.channelId = channelId;
     this.userId = userId;
+    this.userChannelId = userChannelId;
     this.name = name;
     this.email = email;
     this.avatarUrl = avatarUrl;

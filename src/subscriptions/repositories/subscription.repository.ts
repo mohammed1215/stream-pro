@@ -22,7 +22,13 @@ export class SubscriptionRepository {
       select: {
         id: true,
         user: {
-          select: { id: true, name: true, email: true, avatarUrl: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+            channel: { select: { id: true } },
+          },
         },
         channelId: true,
         channel: {

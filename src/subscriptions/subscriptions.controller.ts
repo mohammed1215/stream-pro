@@ -93,6 +93,7 @@ export class SubscriptionsController {
           subscription.id,
           subscription.channelId,
           subscription.user.id,
+          subscription.user.channel?.id || null,
           subscription.user.name,
           subscription.user.email,
           subscription.user.avatarUrl,
