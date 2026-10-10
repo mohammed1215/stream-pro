@@ -11,6 +11,7 @@ const NOTIFICATION_TITLES: Record<NotificationType, string> = {
   [NotificationType.COMMENT]: 'New Comment',
   [NotificationType.PLAYLIST]: 'Added to Playlist',
   [NotificationType.SUBSCRIPTION]: 'New Subscriber',
+  [NotificationType.REPLY]: 'New Reply',
 };
 
 @Injectable()
