@@ -262,7 +262,7 @@ export class VideosService {
       createdAt: videoData.createdAt,
       isPublished: videoData.isPublished,
       publishTime: videoData.publishTime,
-      tags: videoData.tags.map((tag) => tag.name),
+      tags: videoData.tags,
       categoryId: videoData.category?.id,
     };
   }
