@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { CommentRepository } from './repositories/comment.repository';
@@ -39,10 +43,17 @@ export class CommentsService {
 
     //update counts
     if (comment.parentId) {
-      this.commentRepo
-        .update(comment.parentId, userId, { replyCount: { increment: 1 } })
+      await this.commentRepo.incrementReplyCount(comment.parentId);
+      this.notificationService
+        .create({
+          actorId: userId,
+          recipientId: comment.parent?.userId || '',
+          contextId: comment.id,
+          message: `${comment.user.name} replied to your comment with:${comment.content}`,
+          type: NotificationType.REPLY,
+        })
         .catch((error) => {
-          console.error('Failed to update reply count:', error);
+          console.error('Failed to send comment notification:', error);
         });
     }
 
@@ -118,7 +129,17 @@ export class CommentsService {
     return this.commentRepo.update(commentId, userId, updateCommentDto);
   }
 
-  remove(commentId: string, userId: string) {
-    return this.commentRepo.remove(commentId, userId);
+  async remove(commentId: string, userId: string) {
+    const comment = await this.commentRepo.findOne(commentId);
+    if (comment?.userId !== userId) {
+      throw new ForbiddenException(
+        'You are not authorized to delete this comment',
+      );
+    }
+    const result = await this.commentRepo.remove(commentId, userId);
+    if (result && comment.parentId) {
+      await this.commentRepo.decrementReplyCount(comment.parentId);
+    }
+    return result;
   }
 }

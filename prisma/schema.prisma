@@ -282,6 +282,7 @@ model Notification {
 enum NotificationType {
   LIKE
   COMMENT
+  REPLY
   PLAYLIST
   SUBSCRIPTION
 }

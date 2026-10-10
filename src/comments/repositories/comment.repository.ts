@@ -21,6 +21,8 @@ export class CommentRepository {
         },
         include: {
           video: { include: { channel: { include: { user: true } } } },
+          user: true,
+          parent: true,
         },
       });
       return comment;
@@ -139,6 +141,20 @@ export class CommentRepository {
       }
       throw error;
     }
+  }
+
+  incrementReplyCount(parentId: string) {
+    return this.prismaService.comment.update({
+      where: { id: parentId },
+      data: { replyCount: { increment: 1 } },
+    });
+  }
+
+  decrementReplyCount(parentId: string) {
+    return this.prismaService.comment.update({
+      where: { id: parentId },
+      data: { replyCount: { decrement: 1 } },
+    });
   }
 
   async countComments(filter?: Prisma.CommentWhereInput) {
