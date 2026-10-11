@@ -44,6 +44,16 @@ export class NotificationRepository {
     return { notifications, count };
   }
 
+  async findNotificationByUserAndVideoIdAndType(
+    userId: string,
+    videoId: string,
+    type: NotificationType,
+  ) {
+    return await this.prisma.notification.findFirst({
+      where: { recipientId: userId, videoId, type },
+    });
+  }
+
   async markNotificationAsRead(userId: string, notificationId: string) {
     return await this.prisma.notification.update({
       where: { id: notificationId, recipientId: userId },

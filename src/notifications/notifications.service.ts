@@ -82,9 +82,13 @@ export class NotificationsService {
     );
   }
 
-  // findOne(id: number) {
-  //   return this.notificationRepository.findNotificationById(id);
-  // }
+  findOne(recipientId: string, videoId: string, type: NotificationType) {
+    return this.notificationRepository.findNotificationByUserAndVideoIdAndType(
+      recipientId,
+      videoId,
+      type,
+    );
+  }
 
   async markAllAsRead(userId: string) {
     await this.notificationRepository.markAllNotificationsAsRead(userId);

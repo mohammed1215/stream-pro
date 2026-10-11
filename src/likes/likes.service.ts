@@ -17,6 +17,15 @@ export class LikesService {
       throw new NotFoundException(
         'Video not found or already liked by the user',
       );
+    // check if the user has already liked the video and if a notification has already been sent
+    const existingNotification = await this.notificationService.findOne(
+      like.video.channel.userId,
+      videoId,
+      NotificationType.LIKE,
+    );
+    if (existingNotification) {
+      return like;
+    }
     this.notificationService
       .create({
         actorId: userId,
