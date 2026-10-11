@@ -1,25 +1,31 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from '../src/app.module';
+import { cleanDatabase, createTestApp } from './helpers/e2e-setup';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+jest.setTimeout(30000);
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+describe('App health (e2e)', () => {
+  let app: any;
+  let prisma: any;
+  let server: any;
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
+  beforeAll(async () => {
+    ({ app, prisma, server } = await createTestApp());
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('/api/v1 (GET) responds', async () => {
+    const res = await request(server).get('/api/v1/');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Hello World!');
+  });
+
+  it('database is reachable', async () => {
+    await expect(
+      (prisma as any).user.count(),
+    ).resolves.toEqual(expect.any(Number));
+    await cleanDatabase(prisma);
   });
 });

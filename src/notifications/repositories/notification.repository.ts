@@ -10,15 +10,21 @@ export class NotificationRepository {
   async createNotification(
     actorId: string,
     recipientId: string,
-    contextId: string | null,
     message: string,
     type: NotificationType,
+    videoId?: string,
+    commentId?: string,
+    channelId?: string,
+    playlistId?: string,
   ) {
     return await this.prisma.notification.create({
       data: {
         actorId,
         recipientId,
-        contextId,
+        videoId,
+        commentId,
+        channelId,
+        playlistId,
         message,
         type,
       },

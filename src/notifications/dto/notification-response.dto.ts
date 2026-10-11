@@ -9,7 +9,13 @@ export class NotificationResponseDto {
   @ApiProperty()
   recipientId: string;
   @ApiProperty({ nullable: true })
-  contextId: string | null;
+  videoId: string | null;
+  @ApiProperty({ nullable: true })
+  commentId: string | null;
+  @ApiProperty({ nullable: true })
+  channelId: string | null;
+  @ApiProperty({ nullable: true })
+  playlistId: string | null;
   @ApiProperty()
   message: string;
   @ApiProperty()
@@ -23,20 +29,27 @@ export class NotificationResponseDto {
     notificationId: string,
     actorId: string,
     recipientId: string,
-    contextId: string | null,
+
     message: string,
     type: NotificationType,
     isRead: boolean,
     createdAt: Date,
+    videoId: string | null,
+    commentId: string | null,
+    channelId: string | null,
+    playlistId: string | null,
   ) {
     this.notificationId = notificationId;
     this.actorId = actorId;
     this.recipientId = recipientId;
-    this.contextId = contextId;
     this.message = message;
     this.type = type;
     this.isRead = isRead;
     this.createdAt = createdAt;
+    this.videoId = videoId;
+    this.commentId = commentId;
+    this.channelId = channelId;
+    this.playlistId = playlistId;
   }
 }
 

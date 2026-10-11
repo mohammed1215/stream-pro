@@ -27,7 +27,7 @@ export class SubscriptionsService {
         .create({
           actorId: userId,
           recipientId: subscription.channel.userId,
-          contextId: subscription.id,
+          channelId,
           message: `You have subscribed to ${subscription.channel.title}`,
           type: NotificationType.SUBSCRIPTION,
         })

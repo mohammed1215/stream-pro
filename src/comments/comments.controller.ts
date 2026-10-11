@@ -103,6 +103,15 @@ export class CommentsController {
     };
   }
 
+  // @Get(':commentId/locate')
+  // async locateComment(
+  //   @Param('commentId') commentId: string,
+  //   @Query('sort') sort: 'desc' | 'asc' = 'desc',
+  //   @Query('pageSize') pageSize: string,
+  // ) {
+  //   return await this.commentsService.locateComment(commentId, sort, pageSize);
+  // }
+
   @Get(':videoId')
   @ApiResponse({
     type: PaginatedCommentsResponseDto,

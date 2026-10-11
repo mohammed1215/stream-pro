@@ -157,6 +157,10 @@ export class CommentRepository {
     });
   }
 
+  // async findIndex(){
+  //   this.prismaService.comment.aggregate({})
+  // }
+
   async countComments(filter?: Prisma.CommentWhereInput) {
     return this.prismaService.comment.count({ where: filter });
   }

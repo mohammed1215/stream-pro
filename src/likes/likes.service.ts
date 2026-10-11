@@ -21,7 +21,7 @@ export class LikesService {
       .create({
         actorId: userId,
         recipientId: like.video.channel.userId,
-        contextId: like.videoId,
+        videoId,
         message: `User ${like.user.name} liked your video ${like.video.title}`,
         type: NotificationType.LIKE,
       })

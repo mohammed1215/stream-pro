@@ -86,6 +86,7 @@ model Channel {
   videos         Video[]
   subscriptions  Subscription[]
   watchHistories WatchHistory[]
+  notifications  Notification[]
 }
 
 model Video {
@@ -120,8 +121,9 @@ model Video {
   playlistVideos PlaylistVideo[]
   watchHistories WatchHistory[]
 
-  tags      Tag[]
-  downloads Download[]
+  tags          Tag[]
+  downloads     Download[]
+  notifications Notification[]
 
   @@index([categoryId])
 }
@@ -186,10 +188,11 @@ model Comment {
   videoId String
   video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
-  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  parentId   String?
-  replies    Comment[] @relation("CommentReplies")
-  replyCount Int       @default(0)
+  parent        Comment?       @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId      String?
+  replies       Comment[]      @relation("CommentReplies")
+  replyCount    Int            @default(0)
+  notifications Notification[]
 }
 
 model Like {
@@ -246,9 +249,10 @@ model Playlist {
   updatedAt   DateTime @default(now()) @updatedAt
   isDeleted   Boolean  @default(false)
 
-  userId String
-  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videos PlaylistVideo[]
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videos        PlaylistVideo[]
+  notifications Notification[]
 }
 
 model PlaylistVideo {
@@ -274,9 +278,19 @@ model Notification {
   type        NotificationType
   message     String
   isRead      Boolean          @default(false)
-  contextId   String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @default(now()) @updatedAt
+
+  videoId    String?
+  commentId  String?
+  channelId  String?
+  playlistId String?
+
+  video    Video?    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  comment  Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  channel  Channel?  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  playlist Playlist? @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 enum NotificationType {

@@ -48,7 +48,8 @@ export class CommentsService {
         .create({
           actorId: userId,
           recipientId: comment.parent?.userId || '',
-          contextId: comment.id,
+          commentId: comment.id,
+          videoId,
           message: `${comment.user.name} replied to your comment with:${comment.content}`,
           type: NotificationType.REPLY,
         })
@@ -61,7 +62,8 @@ export class CommentsService {
       .create({
         actorId: userId,
         recipientId: comment.video.channel.userId,
-        contextId: comment.id,
+        commentId: comment.id,
+        videoId,
         message: comment.content,
         type: NotificationType.COMMENT,
       })
@@ -71,6 +73,47 @@ export class CommentsService {
 
     return comment;
   }
+
+  // async locateComment(
+  //   commentId: string,
+  //   sort: 'desc' | 'asc',
+  //   pageSize: string,
+  // ) {
+  //   const comment = await this.commentRepo.findOne(commentId);
+
+  //   if (!comment) throw new NotFoundException('Comment not found');
+
+  //   const kind = comment.parentId ? 'reply' : 'comment';
+  //   if (kind === 'reply') {
+  //     //find the parentIndex and parentPageNumber
+  //     let parentIndex = 0;
+  //     let parentPageNumber = 1;
+
+  //     // Find the parent comment's index and page number
+  //     const parentComments = await this.commentRepo.findAll(
+  //       { videoId: comment.videoId, parentId: null },
+  //       1,
+  //       parseInt(pageSize),
+  //       sort,
+  //     );
+
+  //     return {
+  //       kind,
+  //       videoId: comment.videoId,
+  //       parentId: comment.parentId,
+  //       parentPageNumber: 2,
+  //       parentIndex: 4,
+  //       replyPageNumber: 1,
+  //       replyIndex: 0,
+  //     };
+  //   }
+  //   return {
+  //     kind,
+  //     videoId: comment.videoId,
+  //     pageNumber: 6,
+  //     index: 3,
+  //   };
+  // }
 
   async findAllCommentsForVideo(
     videoId: string,

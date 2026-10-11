@@ -28,7 +28,7 @@ export class PlaylistsService {
         .create({
           actorId: userId,
           recipientId: userId,
-          contextId: playlist.id,
+          playlistId: playlist.id,
           message: `Your playlist ${playlist.title} is now public`,
           type: NotificationType.PLAYLIST,
         })

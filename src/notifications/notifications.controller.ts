@@ -49,11 +49,14 @@ export class NotificationsController {
           notification.id,
           notification.actorId,
           notification.recipientId,
-          notification.contextId,
           notification.message,
           notification.type,
           notification.isRead,
           notification.createdAt,
+          notification.videoId,
+          notification.commentId,
+          notification.channelId,
+          notification.playlistId,
         ),
     );
 
@@ -110,11 +113,14 @@ export class NotificationsController {
       notification.id,
       notification.actorId,
       notification.recipientId,
-      notification.contextId,
       notification.message,
       notification.type,
       notification.isRead,
       notification.createdAt,
+      notification.videoId,
+      notification.commentId,
+      notification.channelId,
+      notification.playlistId,
     );
   }
 

@@ -26,9 +26,12 @@ export class NotificationsService {
     const notification = await this.notificationRepository.createNotification(
       createNotificationDto.actorId,
       createNotificationDto.recipientId,
-      createNotificationDto.contextId,
       createNotificationDto.message,
       createNotificationDto.type,
+      createNotificationDto.videoId,
+      createNotificationDto.commentId,
+      createNotificationDto.channelId,
+      createNotificationDto.playlistId,
     );
 
     const user = await this.userRepo.findById(notification.recipientId);
@@ -48,7 +51,10 @@ export class NotificationsService {
             NOTIFICATION_TITLES[notification.type],
             notification.message,
             {
-              contextId: notification.contextId ?? '',
+              videoId: notification.videoId ?? '',
+              commentId: notification.commentId ?? '',
+              channelId: notification.channelId ?? '',
+              playlistId: notification.playlistId ?? '',
               notificationId: notification.id,
             },
           ),
