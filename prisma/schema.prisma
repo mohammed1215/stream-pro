@@ -45,22 +45,46 @@ model User {
 }
 
 model RefreshToken {
-  id          String      @id @default(uuid())
-  tokenHash   String      @unique
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String @id @default(uuid())
+  tokenHash String @unique
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   deviceId    String?
+  deviceName  String?
   deviceType  DeviceType?
   deviceToken String?
-  isRevoked   Boolean     @default(false)
-  expiresAt   DateTime
+  appVersion  String?
+  userAgent   String?
 
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @default(now()) @updatedAt
-  lastUsedAt DateTime?
+  // network / geo
+  createdIp String?
+  lastIp    String?
+  country   String?
+  city      String?
+
+  // lifecycle / security
+  isRevoked      Boolean        @default(false)
+  revokedAt      DateTime?
+  revokedReason  RevokedReason?
+  replacedByHash String?
+  loginMethod    AuthProvider? // LOCAL, GOOGLE
+  expiresAt      DateTime
+  lastUsedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now()) @updatedAt
 
   @@unique([userId, deviceId])
   @@index([userId])
+  @@index([expiresAt])
+}
+
+enum RevokedReason {
+  LOGOUT
+  LOGOUT_ALL
+  REUSE_DETECTED
+  EXPIRED
+  ADMIN
 }
 
 enum DeviceType {

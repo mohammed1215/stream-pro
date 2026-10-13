@@ -18,3 +18,25 @@ export function ApiSuccessResponse<TModel extends Type<any>>(model: TModel) {
     }),
   );
 }
+
+export function ApiSuccessArrayResponse<TModel extends Type<any>>(
+  model: TModel,
+) {
+  return applyDecorators(
+    ApiOkResponse({
+      schema: {
+        allOf: [
+          { $ref: getSchemaPath(SuccessResponseShape) },
+          {
+            properties: {
+              data: {
+                type: 'array',
+                items: { $ref: getSchemaPath(model) },
+              },
+            },
+          },
+        ],
+      },
+    }),
+  );
+}

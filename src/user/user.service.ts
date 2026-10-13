@@ -13,12 +13,27 @@ import { ConfigService } from '@nestjs/config';
 import { instanceToPlain } from 'class-transformer';
 import { FirebaseService } from '../firebase/firbase.service';
 import { OAuth2Client } from 'google-auth-library';
-import { AuthProvider, DeviceType } from '../generated/prisma/enums';
+import {
+  AuthProvider,
+  DeviceType,
+  RevokedReason,
+} from '../generated/prisma/enums';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 import * as crypto from 'crypto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { VideosService } from '../videos/videos.service';
+
+type DeviceInfo = {
+  deviceId?: string | null;
+  deviceToken?: string | null;
+  deviceType?: DeviceType | null;
+  deviceName?: string | null;
+  appVersion?: string;
+  userAgent?: string;
+};
+
+type LocationInfo = { ip?: string; city?: string; country?: string };
 
 @Injectable()
 export class UserService {
@@ -40,14 +55,27 @@ export class UserService {
 
   // ============================== Auth =============================
 
-  async register(createUserDto: CreateUserDto) {
+  async register(
+    createUserDto: CreateUserDto,
+    userAgent?: string,
+    locationInfo?: LocationInfo,
+  ) {
     //check if email in database
-    const { deviceToken, deviceType, deviceId } = createUserDto;
+    const {
+      deviceToken,
+      deviceType,
+      deviceId,
+      deviceName,
+      appVersion,
+      name,
+      email,
+    } = createUserDto;
 
     // hash password
     const password = await bcrypt.hash(createUserDto.password, 10);
     const newUser = await this.userRepo.create({
-      ...createUserDto,
+      name,
+      email,
       password,
       provider: AuthProvider.LOCAL,
     });
@@ -60,12 +88,31 @@ export class UserService {
         avatarUrl: newUser.avatarUrl,
         name: newUser.name,
       },
-      { deviceId, deviceToken, deviceType },
+      AuthProvider.LOCAL,
+      { deviceId, deviceToken, deviceType, deviceName, appVersion, userAgent },
+      {
+        lastIp: locationInfo?.ip,
+        createdIp: locationInfo?.ip,
+        city: locationInfo?.city,
+        country: locationInfo?.country,
+      },
     );
   }
 
-  async login(loginDto: LoginRequestDto) {
-    const { email, password, deviceId, deviceToken, deviceType } = loginDto;
+  async login(
+    loginDto: LoginRequestDto,
+    userAgent?: string,
+    locationInfo?: LocationInfo,
+  ) {
+    const {
+      email,
+      password,
+      deviceId,
+      deviceToken,
+      deviceType,
+      appVersion,
+      deviceName,
+    } = loginDto;
     //check if email is used or not
     const user = await this.userRepo.findByEmail(email);
     if (!user) {
@@ -93,7 +140,14 @@ export class UserService {
         avatarUrl: user.avatarUrl,
         name: user.name,
       },
-      { deviceId, deviceToken, deviceType },
+      AuthProvider.LOCAL,
+      { deviceId, deviceToken, deviceType, deviceName, appVersion, userAgent },
+      {
+        lastIp: locationInfo?.ip,
+        createdIp: locationInfo?.ip,
+        city: locationInfo?.city,
+        country: locationInfo?.country,
+      },
     );
   }
 
@@ -123,11 +177,8 @@ export class UserService {
 
   async googleLogin(
     token: string,
-    deviceInfo?: {
-      deviceId?: string | null;
-      deviceToken?: string | null;
-      deviceType?: DeviceType | null;
-    },
+    deviceInfo?: DeviceInfo,
+    locationInfo?: LocationInfo,
   ) {
     const payload = await this.verifyGoogleToken(token);
     if (!payload.email) {
@@ -139,7 +190,17 @@ export class UserService {
     );
 
     if (existingGoogleUser) {
-      return this.issueTokensForUser(existingGoogleUser, deviceInfo);
+      return this.issueTokensForUser(
+        existingGoogleUser,
+        AuthProvider.GOOGLE,
+        deviceInfo,
+        {
+          lastIp: locationInfo?.ip,
+          createdIp: locationInfo?.ip,
+          city: locationInfo?.city,
+          country: locationInfo?.country,
+        },
+      );
     }
 
     const existingEmailUser = await this.userRepo.findByEmail(payload.email);
@@ -158,7 +219,12 @@ export class UserService {
       avatarUrl: payload.picture,
     });
 
-    return this.issueTokensForUser(newUser, deviceInfo);
+    return this.issueTokensForUser(
+      newUser,
+      AuthProvider.GOOGLE,
+      deviceInfo,
+      locationInfo,
+    );
   }
   async checkUserExistsByEmail(email: string) {
     const user = await this.userRepo.findByEmail(email);
@@ -208,16 +274,26 @@ export class UserService {
     return { accessToken, refreshToken };
   }
 
-  async refreshToken(refreshToken: string) {
+  async refreshToken(refreshToken: string, ip?: string, userAgent?: string) {
     const tokenHash = this.hashToken(refreshToken);
     const tokenRecord = await this.refreshTokenRepo.findByToken(tokenHash);
 
     if (!tokenRecord) {
+      const token = await this.refreshTokenRepo.findByReplacedHash(tokenHash);
+      if (token) {
+        await this.refreshTokenRepo.revokeAllForUser(
+          token.userId,
+          RevokedReason.REUSE_DETECTED,
+        );
+      }
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     if (tokenRecord.isRevoked) {
-      await this.refreshTokenRepo.revokeAllForUser(tokenRecord.userId);
+      await this.refreshTokenRepo.revokeAllForUser(
+        tokenRecord.userId,
+        RevokedReason.REUSE_DETECTED,
+      );
       throw new UnauthorizedException(
         'Session invalidated. Please login again.',
       );
@@ -240,18 +316,25 @@ export class UserService {
       tokenRecord.id,
       this.hashToken(newRefreshToken),
       newExpiresAt,
+      ip ?? null,
+      userAgent ?? null,
+      tokenRecord.tokenHash,
     );
 
     return { accessToken, refreshToken: newRefreshToken };
   }
 
-  async logout(tokenHash?: string) {
-    if (!tokenHash) throw new UnauthorizedException('Refresh token not found');
+  async logout(token?: string) {
+    if (!token) throw new UnauthorizedException('Refresh token not found');
+    const tokenHash = this.hashToken(token);
     return this.refreshTokenRepo.revoke(tokenHash);
   }
 
   async logoutFromAllDevices(userId: string) {
-    return this.refreshTokenRepo.revokeAllForUser(userId);
+    return this.refreshTokenRepo.revokeAllForUser(
+      userId,
+      RevokedReason.LOGOUT_ALL,
+    );
   }
 
   async revokeSession(userId: string, sessionId: string) {
@@ -282,7 +365,10 @@ export class UserService {
   }
 
   async deleteAccount(userId: string) {
-    await this.refreshTokenRepo.revokeAllForUser(userId);
+    await this.refreshTokenRepo.revokeAllForUser(
+      userId,
+      RevokedReason.LOGOUT_ALL,
+    );
     return this.userRepo.delete(userId);
   }
 
@@ -292,10 +378,13 @@ export class UserService {
 
   private async issueTokensForUser(
     user: { id: string; email: string; name: string; avatarUrl: string | null },
-    deviceInfo?: {
-      deviceId?: string | null;
-      deviceToken?: string | null;
-      deviceType?: DeviceType | null;
+    loginMethod: AuthProvider | null = null,
+    deviceInfo?: DeviceInfo,
+    locationInfo?: {
+      createdIp?: string | null;
+      lastIp?: string | null;
+      country?: string | null;
+      city?: string | null;
     },
   ) {
     const { accessToken, refreshToken } = await this.generateAuthToken({
@@ -310,6 +399,14 @@ export class UserService {
       deviceInfo?.deviceToken ?? null,
       deviceInfo?.deviceType ?? null,
       deviceInfo?.deviceId ?? null,
+      deviceInfo?.deviceName ?? null,
+      deviceInfo?.userAgent ?? null,
+      locationInfo?.createdIp ?? null,
+      locationInfo?.lastIp ?? null,
+      locationInfo?.country ?? null,
+      locationInfo?.city ?? null,
+      deviceInfo?.appVersion ?? null,
+      loginMethod,
     );
 
     return {
@@ -330,7 +427,7 @@ export class UserService {
 
   async getActiveSession(userId: string, sessionId: string) {
     const refreshTokenRecord =
-      await this.refreshTokenRepo.findByToken(sessionId);
+      await this.refreshTokenRepo.findBySessionId(sessionId);
 
     if (
       !refreshTokenRecord ||
@@ -341,6 +438,7 @@ export class UserService {
     ) {
       throw new NotFoundException('token not found');
     }
+
     return refreshTokenRecord;
   }
 
