@@ -2,6 +2,27 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { VideosService } from '../videos/videos.service';
 import { SearchQueryRepository } from './repositories/search-query.repository';
 
+const ENCODED_PATTERN = /%(?:[0-9A-Fa-f]{2})/;
+
+/**
+ * Decodes terms that arrive (or were stored) percent-encoded and trims them,
+ * so search history stays human-readable. Never throws: malformed input is
+ * returned as-is.
+ */
+export function normalizeSearchTerm(term: string): string {
+  let current = (term ?? '').trim();
+  for (let i = 0; i < 2 && ENCODED_PATTERN.test(current); i++) {
+    try {
+      const next = decodeURIComponent(current);
+      if (next === current) break;
+      current = next.trim();
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
 @Injectable()
 export class SearchService {
   constructor(
@@ -18,6 +39,8 @@ export class SearchService {
   }
 
   async logSearch(term: string, userId?: string) {
-    return this.searchQueryRepository.logSearch(term, userId);
+    const normalized = normalizeSearchTerm(term);
+    if (!normalized) return;
+    return this.searchQueryRepository.logSearch(normalized, userId);
   }
 }

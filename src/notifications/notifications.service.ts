@@ -51,6 +51,7 @@ export class NotificationsService {
             NOTIFICATION_TITLES[notification.type],
             notification.message,
             {
+              type: notification.type,
               videoId: notification.videoId ?? '',
               commentId: notification.commentId ?? '',
               channelId: notification.channelId ?? '',
