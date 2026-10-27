@@ -23,6 +23,7 @@ export class WatchlaterService {
     );
 
     const newItems = items.map((item) => ({
+      id: item.id,
       video: {
         id: item.video.id,
         title: item.video.title,
